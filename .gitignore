@@ -6,8 +6,10 @@
 data
 videos
 plots
-notebooks
+notebooks/trials
 _research
+src/**/.git
+.env
 
 ################################################################################
 #                                    Julia                                     #

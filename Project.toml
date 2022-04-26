@@ -1,6 +1,20 @@
 name = "Doran_etal_2022"
-[compat]
-julia = "1.7.2"
-DrWatson = "2.9.1"
+
 [deps]
+ArgMacros = "dbc42088-9de8-42a0-8ec8-2cd114e1ea3e"
+DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
 DrWatson = "634d3b9d-ee7a-5ddf-bec9-22491ea816e1"
+FastME_jll = "c1840c37-842c-5077-b0bd-95b7c831fb27"
+FastTree_jll = "046fc0e8-debb-562a-987b-147c85b24435"
+Goalign_jll = "ed1357da-d9e6-57e3-b342-6130e0ca2d5e"
+Gotree_jll = "39fdd4d3-b125-5cbe-a3fb-d0967b9158ef"
+MrBayes_jll = "4028151b-0928-560d-8573-53f5e508f174"
+NewickTreeTools = "1abf9678-c49a-4afa-ab92-00b82bb2fe92"
+PhyML_jll = "1371226f-2bf8-5a91-99cc-70a4fbc99e18"
+RAxML_jll = "c041c47d-3145-556a-bf4b-99e7014d775b"
+SPI = "a959a40c-7f6b-448f-a4b7-059cce266d3c"
+SeqGen_jll = "1820de90-959d-54bb-9e2e-c539b020f79b"
+
+[compat]
+DrWatson = "2.9.1"
+julia = "1.7.2"
