@@ -8,7 +8,8 @@ videos
 plots
 notebooks/trials
 _research
-src/**/.git
+src/SPI.jl/.git
+src/NewickTreeTools/.git
 .env
 
 ################################################################################
