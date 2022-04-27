@@ -11,6 +11,7 @@ _research
 src/SPI.jl/.git
 src/NewickTreeTools/.git
 .env
+cpuprof
 
 ################################################################################
 #                                    Julia                                     #
