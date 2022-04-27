@@ -1,6 +1,7 @@
 using DrWatson
 @quickactivate "Doran_etal_2022"
 using ArgMacros
+using TimerOutputs
 using SPI
 using StatsBase: sample
 using Gotree_jll
@@ -10,8 +11,7 @@ include(joinpath(srcdir(), "parsephylip.jl"))
 @structarguments false Args begin
     @argumentrequired String inputfile "-i" "--inputfile"
     @argtest inputfile isfile "Couldn't find the input file."
-    @argtest inputfile (f)->split(f, ".")[end] ∈ ["txt", "phy", "phylip"] \
-        "extension not recognized; should be .phy .phylip or .txt"
+    @argtest inputfile (f)->(split(f, ".")[end] ∈ ["txt", "phy", "phylip"]) "extension not recognized; should be .phy .phylip or .txt"
     @argumentrequired String outputdir "-o" "--outputdir"
     @argumentdefault Int 100 nboot "-b" "--nboot"
     @argtest nboot n->0≤n "nboot must be positive"
@@ -21,22 +21,22 @@ end
 function julia_main()::Cint
     # parse arguments
     args = Args()
-    Logging.LogLevel(args.loglevel)
+    logger = ConsoleLogger(stdout, LogLevel(args.loglevel))
+    global_logger(logger)
+    time = TimerOutput()
+    @timeit time "total" begin
+
     @info "Starting SPI inference"
     @info "Setting up workspace"
     # setup output dir
-    mkpath(args.outputdir) || 
+    mkpath(args.outputdir) != nothing || 
         ErrorException("Could not create outputdir: $(args.outputdir)")
     
     @info "Running SPI" 
-    @time begin
-        phydf = readphylip(args.inputfile) ||
-            ErrorException("""
-            Could not parse inputfile: $(args.inputfile)
-            Please check formatting should be in relaxed phylip format
-            """)
+    @timeit time "running SPI" begin
+        phydf = readphylip(args.inputfile)
         M = onehotencode(phydf.seqs)
-        spitree = calc_spi_tree(M, phydf.ids)
+        spitree = SPI.calc_spi_tree(Matrix(M), phydf.ids; labelinternalnodes=false)
     end #time
     
     @info "Writing out SPI Tree"
@@ -46,14 +46,16 @@ function julia_main()::Cint
 
     # Bootstrap
     if args.nboot > 0
-        @info "Starting Bootstrap with $(args.nboots)"
-        @time begin
+        @info "Starting Bootstrap with $(args.nboot)"
+        @timeit time "running bootstrap SPI" begin
             boottrees = Vector()
             chardf = _stringcolumntochardf(phydf.seqs)
             Threads.@threads for i in 1:args.nboot
                 nchars = size(chardf, 2)
-                tmpM = chardf[:,sample(1:nchars, nchars, replace=true)]
-                push!(boottrees, calc_spi_tree(tmpM, phydf.ids))
+                colsmps = sample(1:nchars, nchars, replace=true)
+                tmpM = DataFrame(Dict(string(n)=>chardf[:,c] for (n,c) in enumerate(colsmps)))
+                tmpM = onehotencode(tmpM)
+                push!(boottrees, SPI.calc_spi_tree(Matrix(tmpM), phydf.ids; labelinternalnodes=false))
             end
         end # time
         @info "Writing out Bootstrap trees"
@@ -64,13 +66,18 @@ function julia_main()::Cint
             end
         end
 
+        @info "using Booster to compute support values"
         ## calculate support
-        run(`$(gotree()) compute support booster \
+        run(pipeline(`$(gotree()) compute support tbe --silent \
             -i $(joinpath(args.outputdir, "SPI-tree.nw")) \
             -b $(joinpath(args.outputdir, "SPI-boottrees.nw")) \
-            -o $(joinpath(args.outputdir, "SPI-supporttree.nw"))`)
+            -o $(joinpath(args.outputdir, "SPI-supporttree.nw"))`,
+            stderr=joinpath(args.outputdir, "booster.log")))
     end 
+    end # function timeit
+    @info "Finishing run"
+    @info "\ntiming" show(time) println("")
     return 0
 end
 
-@time julia_main()
+julia_main()

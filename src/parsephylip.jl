@@ -20,7 +20,7 @@ function readphylip(fn::String)
         ord = sortperm(smps)
         return string.(smps[ord]), seqs[ord]
     end
-    return DataFrame("ids" => smps, "seqs" => seqs)
+    return DataFrame("ids" => string.(smps), "seqs" => string.(seqs))
 end # read phylip
 
 
