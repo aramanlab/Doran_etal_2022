@@ -31,7 +31,8 @@ function julia_main()::Cint
     # setup output dir
     mkpath(args.outputdir) != nothing || 
         ErrorException("Could not create outputdir: $(args.outputdir)")
-    
+    name = first(split(basename(args.inputfile), "."))
+
     @info "Running SPI" 
     @timeit time "running SPI" begin
         phydf = readphylip(args.inputfile)
@@ -40,7 +41,7 @@ function julia_main()::Cint
     end #time
     
     @info "Writing out SPI Tree"
-    open(joinpath(args.outputdir, "SPI-tree.nw"), "w") do io
+    open(joinpath(args.outputdir, name * "-tree.nw"), "w") do io
         write(io, spitree * "\n")
     end
 
@@ -60,7 +61,7 @@ function julia_main()::Cint
         end # time
         @info "Writing out Bootstrap trees"
         ## write out SPI boot trees
-        open(joinpath(args.outputdir, "SPI-boottrees.nw"), "w") do io
+        open(joinpath(args.outputdir, name * "-boottrees.nw"), "w") do io
             for btree in boottrees
                 write(io, btree * "\n")
             end
@@ -69,9 +70,9 @@ function julia_main()::Cint
         @info "using Booster to compute support values"
         ## calculate support
         run(pipeline(`$(gotree()) compute support tbe --silent \
-            -i $(joinpath(args.outputdir, "SPI-tree.nw")) \
-            -b $(joinpath(args.outputdir, "SPI-boottrees.nw")) \
-            -o $(joinpath(args.outputdir, "SPI-supporttree.nw"))`,
+            -i $(joinpath(args.outputdir, name * "-tree.nw")) \
+            -b $(joinpath(args.outputdir, name * "-boottrees.nw")) \
+            -o $(joinpath(args.outputdir, name * "-supporttree.nw"))`,
             stderr=joinpath(args.outputdir, "booster.log")))
     end 
     end # function timeit

@@ -115,17 +115,18 @@ for Nf in nfeatures
     mkpath(msadir)
     for f in readdir(treedir)
         fn = first(split(f, "."))
-        run(pipeline(`$(seqgen()) -q -z$(seed) -s $(gtdbmsalength/Nf) -or  -l$Nf -mGTR -f0.5,0.0,0.0,0.5`,
+        run(pipeline(`$(seqgen()) -q -z$(seed) -s $(gtdbmsalength/Nf) -or  -l$Nf -mHKY -f0.5,0.0,0.0,0.5`,
             stdin=joinpath(treedir, f),
             stdout=joinpath(msadir, fn * "-l$Nf-b2.phy")))
     end
 end
 # Nbits = 4 (nucleotide)
+# HKY with no other parameters, equivalent to JC69 model
 for Nf in nfeatures
     mkpath(msadir)
     for f in readdir(treedir)
         fn = first(split(f, "."))
-        run(pipeline(`$(seqgen()) -q -z$(seed) -s $(gtdbmsalength/Nf) -or -l$Nf -mHKY`,
+        run(pipeline(`$(seqgen()) -q -z$(seed) -s $(gtdbmsalength/Nf) -or -l$Nf -mHKY`, 
             stdin=joinpath(treedir, f),
             stdout=joinpath(msadir, fn * "-l$Nf-b4.phy")))
     end
