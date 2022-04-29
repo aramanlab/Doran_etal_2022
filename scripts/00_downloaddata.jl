@@ -1,5 +1,5 @@
 using DrWatson
-@quickactivate :Doran_etal_2022
+@quickactivate "Doran_etal_2022"
 
 
 # GTDB data

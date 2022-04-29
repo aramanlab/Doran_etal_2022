@@ -1,5 +1,6 @@
 using DrWatson
-@quickactivate :Doran_etal_2022
+@quickactivate "Doran_etal_2022"
+using CSV, DataFrames
 using Gotree_jll, Goalign_jll, SeqGen_jll
 
 treedir = joinpath(datadir(), "sims", "trees")
@@ -143,7 +144,7 @@ for Nf in nfeatures
 end
 
 ## Make plots of simulated source trees ##
-srctreeplotsdir = joinpath(plotdir(), "simtrees")
+srctreeplotsdir = joinpath(projectdir(), "plots", "simtrees")
 rm(srctreeplotsdir, force=true, recursive=true)
 mkpath(srctreeplotsdir)
 for tf in readdir(treedir)
