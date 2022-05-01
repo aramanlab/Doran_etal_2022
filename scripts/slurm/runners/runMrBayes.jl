@@ -76,7 +76,7 @@ function julia_main()::Cint
     end
 
     @timeit time "mrbayes" begin
-        run(pipeline(`$(mb()) commands.nex`, stdout="mb.out"))
+        run(pipeline(`mpirun -p 4 $(mbMPI()) commands.nex`, stdout="mb.out"))
     end # timeit
 
     @timeit time "convert tree file" begin
