@@ -46,8 +46,7 @@ function julia_main()::Cint
         $(modelparam) \
         -gamma \
         -boot $(args.nboot)
-        -log $(joinpath(args.outputdir, name * ".log"))
-        `,
+        -log $(joinpath(args.outputdir, name * ".log"))`,
         stdin=joinpath(args.outputdir, name * ".fasta"),
         stderr=joinpath(args.outputdir, name * "_fasttree.out"),
         stdout=joinpath(args.outputdir, name * "-supporttree.nw")))
