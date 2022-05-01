@@ -1,11 +1,10 @@
 using DrWatson
 @quickactivate "Doran_etal_2022"
-using ArgMacros
-using TimerOutputs
-using SPI
+using SPI, SparseArrays 
+using ArgMacros, Logging, TimerOutputs
 using StatsBase: sample
 using Gotree_jll
-using Logging
+
 include(joinpath(srcdir(), "parsephylip.jl"))
 
 @structarguments false Args begin
@@ -37,7 +36,10 @@ function julia_main()::Cint
     @timeit time "running SPI" begin
         phydf = readphylip(args.inputfile)
         M = onehotencode(phydf.seqs)
-        spitree = SPI.calc_spi_tree(Matrix(M), phydf.ids; labelinternalnodes=false)
+        vals, vecs = eigen(Matrix(M*M'))
+        dij = calc_spi_mtx(vecs, sqrt.(vals))
+        hc = hclust(dij, linkage=:average, branchorder=:optimal)
+        spitree = nwstr(hc, phydf.ids; labelinternalnodes=false)
     end #time
     
     @info "Writing out SPI Tree"
@@ -50,13 +52,15 @@ function julia_main()::Cint
         @info "Starting Bootstrap with $(args.nboot)"
         @timeit time "running bootstrap SPI" begin
             boottrees = Vector()
-            chardf = _stringcolumntochardf(phydf.seqs)
+            chardf = _stringcolumntocharmtx(phydf.seqs)
             Threads.@threads for i in 1:args.nboot
                 nchars = size(chardf, 2)
                 colsmps = sample(1:nchars, nchars, replace=true)
-                tmpM = DataFrame(Dict(string(n)=>chardf[:,c] for (n,c) in enumerate(colsmps)))
-                tmpM = onehotencode(tmpM)
-                push!(boottrees, SPI.calc_spi_tree(Matrix(tmpM), phydf.ids; labelinternalnodes=false))
+                tmpM = onehotencode(chardf[:,colsmps])
+                vals, vecs = eigen(Matrix(tmpM * tmpM'))
+                dij = calc_spi_mtx(vecs, sqrt.(vals))
+                hc = hclust(dij, linkage=:average, branchorder=:optimal)
+                push!(boottrees, nwstr(hc, phydf.ids; labelinternalnodes=false))
             end
         end # time
         @info "Writing out Bootstrap trees"

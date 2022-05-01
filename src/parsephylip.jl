@@ -1,4 +1,6 @@
 using DataFrames
+using StatsBase
+using SparseArrays
 
 """
     readphylip(fn::String)
@@ -25,9 +27,9 @@ end # read phylip
 
 
 
-onehotencode(seqs::Vector{<:AbstractString}) = onehotencode(_stringcolumntochardf(seqs))
+onehotencode(seqs::Vector{<:AbstractString}) = onehotencode(_stringcolumntocharmtx(seqs))
 function onehotencode(df::D) where D<:AbstractDataFrame
-    ohedf = DataFrame()
+    ohedf = spzeros(size(df,1), 0)
     origsize=size(df,2)
     for i in 1:origsize
         ohedf = hcat(ohedf, onehotencode(df, string(i)))
@@ -38,6 +40,17 @@ function onehotencode(df::D, col, cate = sort(unique(df[!, col])); outnames = Sy
     select(df, @. col => ByRow(isequal(cate)) .=> outnames)
 end
 
+function onehotencode(chardf::Matrix{<:Char})
+    ohemtx = Vector()
+    for col in eachcol(chardf)
+        push!(ohemtx, indicatormat(col)')
+    end
+    return sparse(hcat(ohemtx...))
+end
+
 function _stringcolumntochardf(seqs)
     DataFrame(reduce(hcat, collect.(seqs)) |> permutedims, [string(i) for i in 1:length(first(seqs))])
+end
+function _stringcolumntocharmtx(seqs)
+    Matrix(DataFrame(reduce(hcat, collect.(seqs)) |> permutedims, [string(i) for i in 1:length(first(seqs))]))
 end
