@@ -23,9 +23,16 @@ inputfile="${sourcefiles[$SLURM_ARRAY_TASK_ID]}"
 name=$(basename $inputfile .phy)
 outputdir="${projdir}/_research/runMrBayes/${name}"
 
+if [[ $name == *-b20* ]]; then
+    model="-m WAG"
+else 
+    model="-m JC69"
+fi
+
 # srun julia --threads=10 ./runners/runMrBayes.jl \
 #         --inputfile $inputfile \
 #         --outputdir $outputdir \
+#         $model \
 #         --nboot 100 >> $outputdir/runMrBayes.out
 
 echo "datadir: " $datadir

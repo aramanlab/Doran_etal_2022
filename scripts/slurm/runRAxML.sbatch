@@ -22,10 +22,17 @@ inputfile="${sourcefiles[$SLURM_ARRAY_TASK_ID]}"
 name=$(basename $inputfile .phy)
 outputdir="${projdir}/_research/runRAxML/${name}"
 
+if [[ $name == *-b20* ]]; then
+    model="-m WAG"
+else 
+    model="-m JC69"
+fi
+
 # srun julia ./runners/runRAxML.jl \
 #         --inputfile $inputfile \
 #         --outputdir $outputdir \
 #         --nthreads 10 \
+#         $model \
 #         --nboot 100 >> $outputdir/runRAxML.out
 
 echo "datadir: " $datadir
