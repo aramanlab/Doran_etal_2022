@@ -1,6 +1,7 @@
 [submodule "src/SPI.jl"]
 	path = src/SPI.jl
-	url = https://github.com/aramanlab/SPI.jl.git
+	url = git@github.com:aramanlab/SPI.jl.git
 [submodule "src/NewickTreeTools.jl"]
 	path = src/NewickTreeTools.jl
-	url = https://github.com/aramanlab/NewickTreeTools.jl.git
+	url = git@github.com:aramanlab/NewickTreeTools.jl.git
+	
