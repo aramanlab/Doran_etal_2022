@@ -41,11 +41,12 @@ function julia_main()::Cint
 
     @info "Starting FastTree on $name"
     # protein WAG, general JTT
+    # with SH-like local supports
     @timeit time "fasttree" begin
         run(pipeline(`$(fasttreeMP()) \
         $(modelparam) \
         -gamma \
-        -boot $(args.nboot)
+        -boot $(args.nboot) \
         -log $(joinpath(args.outputdir, name * ".log"))`,
         stdin=joinpath(args.outputdir, name * ".fasta"),
         stderr=joinpath(args.outputdir, name * "_fasttree.out"),

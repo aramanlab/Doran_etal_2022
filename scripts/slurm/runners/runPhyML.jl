@@ -14,6 +14,7 @@ using Logging
     @argumentdefault Int 0 loglevel "-l" "--loglevel"
     @argumentdefault Int 100 nboot "-b" "--nboot"
     @argtest nboot n->0≤n "nboot must be positive"
+    @argumentdefault Int 1 nproc "-p" "--nproc"
 end
 
 function julia_main()::Cint
@@ -38,6 +39,7 @@ function julia_main()::Cint
     @info "Starting PhyML on $name"
     # protein WAG, general JTT
     @timeit time "PhyML" begin
+        # [for running with MPI] run(pipeline(`mpirun -np $(args.nproc) $(phyml()) \
         run(pipeline(`$(phyml()) \
             $modelparam \
             -i $(joinpath(args.outputdir, basename(args.inputfile))) \
@@ -45,14 +47,17 @@ function julia_main()::Cint
             --search SPR \
             --r_seed 123456 \
             --rand_start \
-            --n_rand_starts 5 \
-            --bootstrap -1`,
+            --n_rand_starts 3 \
+            --no_memory_check \
+            --bootstrap -4`, # SH like branch supports
         stdout=joinpath(args.outputdir, name * "_phyml.out")))
-    end
+    end # timeit phyml
+    
     mv(joinpath(args.outputdir, basename(args.inputfile) * "_phyml_tree.txt"),
        joinpath(args.outputdir, basename(args.inputfile) * "-supporttree.txt")
     )
-    end # timeit
+    
+    end # timeit total
     @info "stopping run"
     @info "timing" show(time) println("")
     return 0

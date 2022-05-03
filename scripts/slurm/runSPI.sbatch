@@ -7,10 +7,12 @@
 #SBATCH --cpus-per-task=10
 #SBATCH --time=0-00:05:00
 #SBATCH --mem-per-cpu=2G  # NOTE DO NOT USE THE --mem=OPTION 
+#SBATCH --mail-type=START,END
+#SBATCH --mail-user=bend@uchicago.edu
 
 # When running a large number of tasks simultaneously, it may be
 # necessary to increase the user process limit.
-ulimit -u 10000
+# ulimit -u 10000
 
 module load julia/1.7.2
 
@@ -21,13 +23,15 @@ name=$(basename $inputfile .phy)
 outputdir="${projdir}/_research/runSPI/${name}"
 mkdir -p $outputdir
 
-echo "datadir: " $projdir
+echo "projdir: " $projdir
 echo "inputfile: " $inputfile
 echo "name: " $name
 echo "outputdir: " $outputdir
 
-srun julia --threads=10 scripts/slurm/runners/runSPI.jl \
+srun julia --threads=$SLURM_CPUS_PER_TASK scripts/slurm/runners/runSPI.jl \
     -i $inputfile \
     -o $outputdir \
     --nboot 100 > $outputdir/runSPI.out
 
+echo "time_elapsed: " $(sacct -j $SLURM_JOB_ID --format="Elapsed" | tail -n1 | head -n1)
+echo "time_elapsed: " $(sacct -j $SLURM_JOB_ID --format="Elapsed" | tail -n1 | head -n1) >> $outputdir/runSPI.out

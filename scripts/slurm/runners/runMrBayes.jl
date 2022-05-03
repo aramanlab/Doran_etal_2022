@@ -14,6 +14,7 @@ using Logging
     @argumentdefault Int 0 loglevel "-l" "--loglevel"
     @argumentdefault Int 100 nboot "-b" "--nboot"
     @argtest nboot n->0≤n "nboot must be positive"
+    @argumentdefault Int 5 nproc "-p" "--nproc" 
 end
 
 function julia_main()::Cint
@@ -56,12 +57,12 @@ function julia_main()::Cint
         prset $(modelparam);
         lset nst=6;
         lset rates=equal;
-        mcmcp ngen=200000
+        mcmcp ngen=1000000
             nrun=1
-            nchain=4
-            checkfreq=200000
-            samplefreq=1500
-            printfreq=1500
+            nchain=$(args.nproc)
+            checkfreq=1000
+            samplefreq=1000
+            printfreq=1000
             stoprule=no
             burninfrac=0.25;
         mcmcp append=no;
@@ -76,7 +77,9 @@ function julia_main()::Cint
     end
 
     @timeit time "mrbayes" begin
-        run(pipeline(`mpirun -p 4 $(mbMPI()) commands.nex`, stdout="mb.out"))
+        mb_MPI() do exe
+            run(pipeline(`mpirun -np $(args.nproc) $(exe) commands.nex`, stdout="mb.out"))
+        end
     end # timeit
 
     @timeit time "convert tree file" begin

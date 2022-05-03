@@ -8,6 +8,8 @@
 #SBATCH --cpus-per-task=10
 #SBATCH --time=0-00:10:00
 # #SBATCH --mem-per-cpu=1G  # NOTE DO NOT USE THE --mem=OPTION 
+#SBATCH --mail-type=START,END
+#SBATCH --mail-user=bend@uchicago.edu
 
 # When running a large number of tasks simultaneously, it may be
 # necessary to increase the user process limit.
@@ -39,3 +41,6 @@ srun julia $projdir/scripts/slurm/runners/runFastTree.jl \
         --outputdir $outputdir \
         $model \
         --nboot 100 > $outputdir/runFastTree.out
+
+echo "time_elapsed: " $(sacct -j $SLURM_JOB_ID --format="Elapsed" | tail -n1 | head -n1)
+echo "time_elapsed: " $(sacct -j $SLURM_JOB_ID --format="Elapsed" | tail -n1 | head -n1) >> $outputdir/runFastTree.out
