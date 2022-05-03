@@ -37,37 +37,37 @@ function julia_main()::Cint
         phydf = readphylip(args.inputfile)
         M = onehotencode(phydf.seqs)
         vals, vecs = eigen(Matrix(M*M'))
-        dij = calc_spi_mtx(vecs, sqrt.(vals))
+        dij = calc_spi_mtx(vecs, sqrt.(max.(vals, zero(eltype(vals)))))
         hc = hclust(dij, linkage=:average, branchorder=:optimal)
         spitree = nwstr(hc, phydf.ids; labelinternalnodes=false)
     end #time
     
     @info "Writing out SPI Tree"
     open(joinpath(args.outputdir, name * "-tree.nw"), "w") do io
-        write(io, spitree * "\n")
+        println(io, spitree)
     end
 
     # Bootstrap
     if args.nboot > 0
         @info "Starting Bootstrap with $(args.nboot)"
         @timeit time "running bootstrap SPI" begin
-            boottrees = Vector()
+            boottrees = Vector{String}(undef, args.nboot)
             chardf = _stringcolumntocharmtx(phydf.seqs)
             Threads.@threads for i in 1:args.nboot
                 nchars = size(chardf, 2)
                 colsmps = sample(1:nchars, nchars, replace=true)
                 tmpM = onehotencode(chardf[:,colsmps])
                 vals, vecs = eigen(Matrix(tmpM * tmpM'))
-                dij = calc_spi_mtx(vecs, sqrt.(vals))
+                dij = calc_spi_mtx(vecs, sqrt.(max.(vals, zero(eltype(vals)))))
                 hc = hclust(dij, linkage=:average, branchorder=:optimal)
-                push!(boottrees, nwstr(hc, phydf.ids; labelinternalnodes=false))
+                boottrees[i] = nwstr(hc, phydf.ids; labelinternalnodes=false)
             end
         end # time
         @info "Writing out Bootstrap trees"
         ## write out SPI boot trees
         open(joinpath(args.outputdir, name * "-boottrees.nw"), "w") do io
             for btree in boottrees
-                write(io, btree * "\n")
+                println(io, btree)
             end
         end
 

@@ -17,6 +17,8 @@ PhyML_jll = "1371226f-2bf8-5a91-99cc-70a4fbc99e18"
 RAxML_jll = "c041c47d-3145-556a-bf4b-99e7014d775b"
 SPI = "a959a40c-7f6b-448f-a4b7-059cce266d3c"
 SeqGen_jll = "1820de90-959d-54bb-9e2e-c539b020f79b"
+SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
+StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
 TimerOutputs = "a759f4b9-e2f1-59dc-863e-4aeb61b1ea8f"
 
 [compat]
