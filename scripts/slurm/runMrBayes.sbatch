@@ -37,12 +37,14 @@ echo "inputfile: " $inputfile
 echo "name: " $name
 echo "outputdir: " $outputdir
 
+start=`date +%s`
 julia $projdir/scripts/slurm/runners/runMrBayes.jl \
         --inputfile $inputfile \
         --outputdir $outputdir \
         --nproc $SLURM_CPUS_PER_TASK \
         $model \
         --nboot 100 > $outputdir/runMrBayes.out
-
-echo "time_elapsed: " $(sacct -j $SLURM_JOB_ID --format="Elapsed" | tail -n1 | head -n1)
-echo "time_elapsed: " $(sacct -j $SLURM_JOB_ID --format="Elapsed" | tail -n1 | head -n1) >> $outputdir/runMrBayes.out
+end=`date +%s`
+timeelapsed=$((end-start))
+echo "time_elapsed: " $timeelapsed
+echo "time_elapsed: " $timeelapsed >> $outputdir/runMrBayes.out

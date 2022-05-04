@@ -36,11 +36,13 @@ echo "inputfile: " $inputfile
 echo "name: " $name
 echo "outputdir: " $outputdir
 
+start=`date +%s`
 srun julia $projdir/scripts/slurm/runners/runFastTree.jl \
         --inputfile $inputfile \
         --outputdir $outputdir \
         $model \
         --nboot 100 > $outputdir/runFastTree.out
-
-echo "time_elapsed: " $(sacct -j $SLURM_JOB_ID --format="Elapsed" | tail -n1 | head -n1)
-echo "time_elapsed: " $(sacct -j $SLURM_JOB_ID --format="Elapsed" | tail -n1 | head -n1) >> $outputdir/runFastTree.out
+end=`date +%s`
+timeelapsed=$((end-start))
+echo "time_elapsed: " $timeelapsed
+echo "time_elapsed: " $timeelapsed >> $outputdir/runFastTree.out

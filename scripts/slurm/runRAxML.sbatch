@@ -36,12 +36,14 @@ echo "inputfile: " $inputfile
 echo "name: " $name
 echo "outputdir: " $outputdir
 
+start=`date +%s`
 srun julia $projdir/scripts/slurm/runners/runRAxML.jl \
         --inputfile $inputfile \
         --outputdir $outputdir \
         --nthreads $SLURM_CPUS_PER_TASK \
         $model \
         --nboot 100 > $outputdir/runRAxML.out
-
-echo "time_elapsed: " $(sacct -j $SLURM_JOB_ID --format="Elapsed" | tail -n1 | head -n1)
-echo "time_elapsed: " $(sacct -j $SLURM_JOB_ID --format="Elapsed" | tail -n1 | head -n1) >> $outputdir/runRAxML.out
+end=`date +%s`
+timeelapsed=$((end-start))
+echo "time_elapsed: " $timeelapsed
+echo "time_elapsed: " $timeelapsed >> $outputdir/runRAxML.out

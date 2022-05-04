@@ -28,10 +28,12 @@ echo "inputfile: " $inputfile
 echo "name: " $name
 echo "outputdir: " $outputdir
 
+start=`date +%s`
 srun julia --threads=$SLURM_CPUS_PER_TASK scripts/slurm/runners/runSPI.jl \
     -i $inputfile \
     -o $outputdir \
     --nboot 100 > $outputdir/runSPI.out
-
-echo "time_elapsed: " $(sacct -j $SLURM_JOB_ID --format="Elapsed" | tail -n1 | head -n1)
-echo "time_elapsed: " $(sacct -j $SLURM_JOB_ID --format="Elapsed" | tail -n1 | head -n1) >> $outputdir/runSPI.out
+end=`date +%s`
+timeelapsed=$((end-start))
+echo "time_elapsed: " $timeelapsed
+echo "time_elapsed: " $timeelapsed >> $outputdir/runSPI.out

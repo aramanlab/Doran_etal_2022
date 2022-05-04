@@ -5,7 +5,7 @@
 #SBATCH --partition=broadwl
 #SBATCH --array=1-288%20
 #SBATCH --cpus-per-task=10
-#SBATCH --time=0-03:00:00
+#SBATCH --time=0-04:00:00
 # #SBATCH --mem-per-cpu=1G  # NOTE DO NOT USE THE --mem=OPTION 
 #SBATCH --mail-type=START,END
 #SBATCH --mail-user=bend@uchicago.edu
@@ -34,11 +34,13 @@ echo "inputfile: " $inputfile
 echo "name: " $name
 echo "outputdir: " $outputdir
 
+start=`date +%s`
 srun julia $projdir/scripts/slurm/runners/runFastME.jl \
         --inputfile $inputfile \
         --outputdir $outputdir \
         $model \
         --nboot 100 > $outputdir/runFastME.out
-
-echo "time_elapsed: " $(sacct -j $SLURM_JOB_ID --format="Elapsed" | tail -n1 | head -n1)
-echo "time_elapsed: " $(sacct -j $SLURM_JOB_ID --format="Elapsed" | tail -n1 | head -n1) >> $outputdir/runFastME.out
+end=`date +%s`
+timeelapsed=$((end-start))
+echo "time_elapsed: " $timeelapsed
+echo "time_elapsed: " $timeelapsed >> $outputdir/runFastME.out
