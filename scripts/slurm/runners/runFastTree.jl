@@ -39,6 +39,14 @@ function julia_main()::Cint
             stdout=joinpath(args.outputdir, name * ".fasta")))
     end
 
+    @timeit time "bootstrap alignments" begin
+        run(pipeline(`$(goalign()) build seqboot \
+            -p \
+            -n 100 \
+            -i $(args.inputfile) \
+            -o $(joinpath(args.outputdir, "seq_boot"))`))
+    end
+
     @info "Starting FastTree on $name"
     # protein WAG, general JTT
     # with SH-like local supports
@@ -50,8 +58,30 @@ function julia_main()::Cint
         -log $(joinpath(args.outputdir, name * ".log"))`,
         stdin=joinpath(args.outputdir, name * ".fasta"),
         stderr=joinpath(args.outputdir, name * "_fasttree.out"),
-        stdout=joinpath(args.outputdir, name * "-supporttree.nw")))
+        stdout=joinpath(args.outputdir, name * "-tree.nw")))
     end
+    
+    @info "Starting FastTree on bootstraps of $name"
+    # protein WAG, general JTT
+    @timeit time "fasttree bootstrap" begin
+        run(pipeline(
+            `cat $(args.outputdir, "seq_boot\*.ph")`,
+            `$(fasttreeMP()) \
+                $(modelparam) \
+                -gamma \
+                -boot $(args.nboot) \
+                -log $(joinpath(args.outputdir, name * ".log"))`,
+        stderr=joinpath(args.outputdir, name * "_fasttree_boot.out"),
+        stdout=joinpath(args.outputdir, name * "-boottrees.nw")))
+    end
+
+    @info "using Booster to compute support values"
+    ## calculate support
+    run(pipeline(`$(gotree()) compute support tbe --silent \
+        -i $(joinpath(args.outputdir, name * "-tree.nw")) \
+        -b $(joinpath(args.outputdir, name * "-boottrees.nw")) \
+        -o $(joinpath(args.outputdir, name * "-supporttree.nw"))`,
+        stderr=joinpath(args.outputdir, "booster.log")))
 
     end # timeit
     @info "stopping run"
