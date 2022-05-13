@@ -35,9 +35,11 @@ function julia_main()::Cint
     @info "Running SPI" 
     @timeit time "running SPI" begin
         phydf = readphylip(args.inputfile)
+        nfeats = length(phydf.seqs[1])
         M = onehotencode(phydf.seqs)
         vals, vecs = eigen(Matrix(M*M'))
         dij = calc_spi_mtx(vecs, sqrt.(max.(vals, zero(eltype(vals)))))
+        dij = dij ./ nfeats
         hc = hclust(dij, linkage=:average, branchorder=:optimal)
         spitree = nwstr(hc, phydf.ids; labelinternalnodes=false)
     end #time
@@ -59,6 +61,7 @@ function julia_main()::Cint
                 tmpM = onehotencode(chardf[:,colsmps])
                 vals, vecs = eigen(Matrix(tmpM * tmpM'))
                 dij = calc_spi_mtx(vecs, sqrt.(max.(vals, zero(eltype(vals)))))
+                dij = dij ./ nchars
                 hc = hclust(dij, linkage=:average, branchorder=:optimal)
                 boottrees[i] = nwstr(hc, phydf.ids; labelinternalnodes=false)
             end
