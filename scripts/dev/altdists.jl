@@ -3,7 +3,7 @@ using DrWatson
 
 using Distances, Clustering
 using LinearAlgebra
-using CSV, DataFrames, Muon
+using CSV, DataFrames, Muon, MAT
 using SPI: nwstr
 using Gotree_jll
 
@@ -12,7 +12,7 @@ const RANK = 10
 
 ## LOAD DATA ##
 @info "Reading in data"
-uniprot = readh5ad(joinpath(datadir(), "exp_pro", "UP7047", "2022-02-22_UP7047.h5ad"))
+uniprot = readh5ad(joinpath(datadir(), "exp_pro", "UP7047", "2020_02_UP7047.h5ad"))
 oggs = uniprot.X[:, :]
 usv = SVD(uniprot.obsm["LSVs"][:,:], uniprot.uns["SVs"][:], uniprot.varm["RSVs"][:,:]');
 
@@ -24,10 +24,18 @@ Dcityblock = pairwise(Cityblock(), oggs');
 Dtop10euclidean = pairwise(Euclidean(), usv.U[:,1:10]');
 Dtop10cityblock = pairwise(Cityblock(), usv.U[:,1:10]');
 
+fastANIresults = matread(projectdir("_research", "FastANI", "fastANIdistmtx.mat"))
+indxmapping = indexin(uniprot.obs_names, fastANIresults["ids"])
+DfastANI = zeros(size(uniprot.obsp["SPI_distances"]))
+DfastANI[findall(!isnothing, indxmapping), findall(!isnothing, indxmapping)] .= fastANIresults["mtx"][filter(!isnothing, indxmapping), filter(!isnothing, indxmapping)]
+DfastANI = 100.0 .- DfastANI
+
+
 uniprot.obsp["ogg_euclidean"] = Deuclidean
 uniprot.obsp["ogg_cityblock"] = Dcityblock
 uniprot.obsp["svd_euclidean"] = Dtop10euclidean
 uniprot.obsp["svd_cityblock"] = Dtop10cityblock;
+uniprot.obsp["fastANI_dist"] = DfastANI;
 
 outdir = joinpath(projectdir(), "_research", "UP7047altdists")
 mkpath(outdir)
@@ -54,8 +62,13 @@ nws = nwstr(hc, uniprot.obs_names.vals; labelinternalnodes=false)
 uniprot.uns["svd_cityblock_reftreestring"] = nws
 open(io->println(io, nws), joinpath(outdir, "UP7047_svd_cityblock-tree.nw"), "w")
 
+hc = hclust(DfastANI, linkage=:average, branchorder=:optimal)
+nws = nwstr(hc, uniprot.obs_names.vals; labelinternalnodes=false)
+uniprot.uns["svd_cityblock_reftreestring"] = nws
+open(io->println(io, nws), joinpath(outdir, "UP7047_seq_fastANI-tree.nw"), "w")
+
 @info "writing updates to h5ad file"
-writeh5ad(joinpath(datadir(), "exp_pro", "UP7047", "2022-02-22_UP7047.h5ad"), uniprot)
+writeh5ad(joinpath(datadir(), "exp_pro", "UP7047", "2020_02_UP7047.h5ad"), uniprot)
 
 # STARTING BOOTSTRAP ## 
 @info "starting bootstrap for svd_euclidean..."

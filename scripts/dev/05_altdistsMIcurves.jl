@@ -26,6 +26,17 @@ function clusters_per_cutlevel(distfun::Function, tree::Node, ncuts::Number)
     return clusterids, clustersmps
 end
 
+function pairedMIagainstmetacolumn(metacolumns, IDS, clusterids, clustersmps; doshuffle=false)
+    tstat_MI = zeros(length(clusterids), size(metacolumns, 2))
+    for (i, mcol) in enumerate(eachcol(metacolumns))
+        # cat = levelorder(categorical(mcol))
+        # pcat = cat .== cat'
+        pcat = mcol .== permutedims(replace(mcol, ""=>"missing"))
+        tstat_MI[:, i] .= collectMI_across_treedepth(clusterids, clustersmps, IDS, pcat; doshuffle)
+    end
+    DataFrame(tstat_MI, names(metacolumns)) |> stack |> df->rename!(df,["taxaID","MI"]);
+end
+
 function collectMI_across_treedepth(clusterids, clustersmps, IDS, ptax; doshuffle=false)
     uppertriangle = triu(trues(length(IDS), length(IDS)), 1);
     map(clusterids, clustersmps) do cids, smps
@@ -36,24 +47,14 @@ function collectMI_across_treedepth(clusterids, clustersmps, IDS, ptax; doshuffl
     end
 end
 
-function pairedMIagainstmetacolumn(metacolumns, IDS, clusterids, clustersmps; doshuffle=false)
-    tstat_MI = zeros(length(clusterids), size(metacolumns, 2))
-    for (i, mcol) in enumerate(eachcol(metacolumns))
-        cat = levelorder(categorical(mcol))
-        pcat = cat .== cat'
-        tstat_MI[:, i] .= collectMI_across_treedepth(clusterids, clustersmps, IDS, pcat; doshuffle)
-    end
-    DataFrame(tstat_MI, names(metacolumns)) |> stack |> df->rename!(df,["taxaID","MI"]);
-end
 
-
-uniprot = readh5ad(joinpath(datadir(), "exp_pro", "UP7047", "2022-02-22_UP7047.h5ad"))
+uniprot = readh5ad(joinpath(datadir(), "exp_pro", "UP7047", "2020_02_UP7047.h5ad"))
 UPtaxa = uniprot.obs[:, [:proteomeID, :Phylum, :Class, :Order, :Family, :Genus, :Species]];
 UPIDS = uniprot.obs_names.vals
 close(uniprot.file)
 
 ## Caclulate MI curves for SPI tree ##
-spi_tree = readnw(read(joinpath(projectdir(), "_research", "runSPIonUP7047rows", "2022-02-22_UP7047-supporttree.nw"), String));
+spi_tree = readnw(read(joinpath(projectdir(), "_research", "runSPIonUP7047rows", "2020_02_UP7047-supporttree.nw"), String));
 as_polytomy!(spi_tree, fun=n->NewickTree.support(n)<0.5)
 as_polytomy!(spi_tree, fun=n->NewickTree.distance(n)<1e-8)
 
@@ -63,25 +64,25 @@ as_polytomy!(spi_tree, fun=n->NewickTree.distance(n)<1e-8)
 @info "calculate test MI for SPI tree..."
 @time tstatdf = pairedMIagainstmetacolumn(UPtaxa[!,2:end], UPIDS, clusterids, clustersmps)
 
-@info "calculate perm MI for SPI tree..."
-for i in 1:NPERMS
-    print("\rworking on permutation $i   ")
-    tmpdf = pairedMIagainstmetacolumn(UPtaxa[!,2:end], UPIDS, clusterids, clustersmps; doshuffle=true)
-    tstatdf[!, "MI_perm$i"] = tmpdf.MI
-end
+# @info "calculate perm MI for SPI tree..."
+# for i in 1:NPERMS
+#     print("\rworking on permutation $i   ")
+#     tmpdf = pairedMIagainstmetacolumn(UPtaxa[!,2:end], UPIDS, clusterids, clustersmps; doshuffle=true)
+#     tstatdf[!, "MI_perm$i"] = tmpdf.MI
+# end
 @info "write csv results SPI tree..."
-CSV.write(joinpath(datadir(), "exp_pro", "UP7047", "2022-05-23_MI-spitree_treedepth-by-taxa.csv"), tstatdf)
+CSV.write(joinpath(datadir(), "exp_pro", "UP7047", "2022-06-13_MI-spitree_treedepth-by-taxa.csv"), tstatdf)
 
 ## Caclulate MI curves for altdist trees ##
 @info "starting on Alt Dist trees"
 cd(projectdir())
-altdisttreefiles = glob(joinpath("_research", "UP7047altdists", "*-supporttree.nw"))
+altdisttreefiles = glob(joinpath("_research", "UP7047altdists", "*-tree.nw"))
 altdistnames = replace.(first.(split.(basename.(altdisttreefiles), "-")), "_"=>"-")
 altdisttrees = readnw.(read.(altdisttreefiles, String));
 as_polytomy!.(altdisttrees, fun=n->NewickTree.support(n)<0.5)
 as_polytomy!.(altdisttrees, fun=n->NewickTree.distance(n)<1e-8)
 
-
+@time begin
 for (nm, tree) in zip(altdistnames, altdisttrees)
     @info "calculate tree cuts for $nm..."
     @time clusterids, clustersmps = clusters_per_cutlevel(network_distance, tree, NCUTS);
@@ -89,16 +90,29 @@ for (nm, tree) in zip(altdistnames, altdisttrees)
     @info "calculate test MI for $nm..."
     @time tstatdf = pairedMIagainstmetacolumn(UPtaxa[!,2:end], UPIDS, clusterids, clustersmps);
 
-    @info "calculate perm MI for $nm..."
-    for i in 1:NPERMS
-        print("\rworking on permutation $i   ")
-        tmpdf = pairedMIagainstmetacolumn(UPtaxa[!,2:end], UPIDS, clusterids, clustersmps; doshuffle=true)
-        tstatdf[!, "MI_perm$i"] = tmpdf.MI
-    end
+    # @info "calculate perm MI for $nm..."
+    # for i in 1:NPERMS
+    #     print("\rworking on permutation $i   ")
+    #     tmpdf = pairedMIagainstmetacolumn(UPtaxa[!,2:end], UPIDS, clusterids, clustersmps; doshuffle=true)
+    #     tstatdf[!, "MI_perm$i"] = tmpdf.MI
+    # end
     @info "writing csv results for $nm..."
-    CSV.write(joinpath(datadir(), "exp_pro", "UP7047", "2022-05-23_MI-$(nm)_treedepth-by-taxa.csv"), tstatdf)
+    CSV.write(joinpath(datadir(), "exp_pro", "UP7047", "2022-06-13_MI-$(nm)_treedepth-by-taxa.csv"), tstatdf)
+end
+end # time
+
+## Calculate Max depth of trees
+
+maxdepthdf = DataFrame()
+minmax = extrema(mapinternalnodes(network_distance, spi_tree, spi_tree))
+maxdepthdf = vcat(maxdepthdf, DataFrame("treename"=>"SPI", "maxdepth"=>minmax[2]))
+
+for (nm, tree) in zip(altdistnames, altdisttrees)
+    minmax = extrema(mapinternalnodes(network_distance, tree, tree))
+    maxdepthdf = vcat(maxdepthdf, DataFrame("treename"=>nm, "maxdepth"=>minmax[2]))
 end
 
+maxdepthdf
 
-
+CSV.write(datadir("exp_pro", "UP7047", "2022-06-13_treedepths.csv"), maxdepthdf)
 
