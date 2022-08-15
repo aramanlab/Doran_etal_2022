@@ -1,9 +1,11 @@
 name = "Doran_etal_2022"
 
 [deps]
+AbstractTrees = "1520ce14-60c1-5f80-bbc7-55ef81b5835c"
 ArgMacros = "dbc42088-9de8-42a0-8ec8-2cd114e1ea3e"
 CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
 CategoricalArrays = "324d7699-5711-5eae-9e2f-1d82baa6b597"
+CurveFit = "5a033b19-8c74-5913-a970-47c3779ef25c"
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
 DataStructures = "864edb3b-99cc-5e75-8d2d-829cb0a9cfe8"
 DrWatson = "634d3b9d-ee7a-5ddf-bec9-22491ea816e1"
@@ -27,6 +29,7 @@ SPI = "a959a40c-7f6b-448f-a4b7-059cce266d3c"
 SeqGen_jll = "1820de90-959d-54bb-9e2e-c539b020f79b"
 SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
+StatsPlots = "f3b207a7-027a-5e70-b257-86293d7955fd"
 TimerOutputs = "a759f4b9-e2f1-59dc-863e-4aeb61b1ea8f"
 
 [compat]
