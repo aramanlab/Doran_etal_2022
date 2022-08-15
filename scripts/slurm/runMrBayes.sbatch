@@ -1,13 +1,12 @@
 #!/bin/sh
-
 #SBATCH --job-name=runMrBayes
 #SBATCH --output=/scratch/midway2/bend/projects/Doran_etal_2022/_research/logs/runMrBayes/runMrBayes_%A_%a.out
 #SBATCH --error=/scratch/midway2/bend/projects/Doran_etal_2022/_research/logs/runMrBayes/runMrBayes_%A_%a.err
 #SBATCH --partition=broadwl
-#SBATCH --array=1-288%20
+#SBATCH --array=193-288%30 # 1-288%50
 #SBATCH --cpus-per-task=4
-# #SBATCH --time=0-02:00:00
-# #SBATCH --mem-per-cpu=1G  # NOTE DO NOT USE THE --mem=OPTION 
+# #SBATCH --time=0-01:00:00
+#SBATCH --mem-per-cpu=8G  # NOTE DO NOT USE THE --mem=OPTION 
 #SBATCH --mail-type=START,END
 #SBATCH --mail-user=bend@uchicago.edu
 
@@ -22,7 +21,7 @@ projdir="/scratch/midway2/bend/projects/Doran_etal_2022"
 sourcefiles=(ls $projdir/data/sims/MSAs/*)
 inputfile="${sourcefiles[$SLURM_ARRAY_TASK_ID]}"
 name=$(basename $inputfile .phy)
-outputdir="${projdir}/_research/runMrBayes/${name}"
+outputdir="${projdir}/_research/runMrBayes_rerun/${name}"
 mkdir -p $outputdir
 
 

@@ -4,10 +4,10 @@
 #SBATCH --output=/scratch/midway2/bend/projects/Doran_etal_2022/_research/logs/runPhyML/runPhyML_%A_%a.out
 #SBATCH --error=/scratch/midway2/bend/projects/Doran_etal_2022/_research/logs/runPhyML/runPhyML_%A_%a.err
 #SBATCH --partition=broadwl
-#SBATCH --array=1-288%20
+#SBATCH --array=10,58,154,202  # 1-288%20 # 
 #SBATCH --cpus-per-task=1 # phyml does not have multithreading (MPI is only available for full bootstraps)
-# #SBATCH --time=0-02:30:00
-#SBATCH --mem-per-cpu=12G  # NOTE DO NOT USE THE --mem=OPTION 
+#SBATCH --time=0-04:00:00
+#SBATCH --mem-per-cpu=32G  # NOTE DO NOT USE THE --mem=OPTION 
 #SBATCH --mail-type=START,END
 #SBATCH --mail-user=bend@uchicago.edu
 
