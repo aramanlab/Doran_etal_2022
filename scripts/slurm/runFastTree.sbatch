@@ -6,7 +6,7 @@
 #SBATCH --partition=broadwl
 #SBATCH --array=1-288%20
 #SBATCH --cpus-per-task=10
-#SBATCH --time=0-00:10:00
+#SBATCH --time=0-18:00:00 # 0-00:10:00 #
 # #SBATCH --mem-per-cpu=1G  # NOTE DO NOT USE THE --mem=OPTION 
 #SBATCH --mail-type=START,END
 #SBATCH --mail-user=bend@uchicago.edu

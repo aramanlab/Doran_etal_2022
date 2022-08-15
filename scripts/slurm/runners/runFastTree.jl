@@ -43,6 +43,7 @@ function julia_main()::Cint
         run(pipeline(`$(goalign()) build seqboot \
             -p \
             -n 100 \
+            --seed 123456 \
             -i $(args.inputfile) \
             -o $(joinpath(args.outputdir, "seq_boot"))`))
     end
@@ -65,14 +66,13 @@ function julia_main()::Cint
     # protein WAG, general JTT
     @timeit time "fasttree bootstrap" begin
         run(pipeline(
-            `cat $(args.outputdir, "seq_boot\*.ph")`,
+            `cat $(joinpath(args.outputdir, "seq_boot"))$(collect(0:99)).ph`,
             `$(fasttreeMP()) \
                 $(modelparam) \
+                -n 100 \
                 -gamma \
                 -boot $(args.nboot) \
-                -log $(joinpath(args.outputdir, name * ".log"))`,
-        stderr=joinpath(args.outputdir, name * "_fasttree_boot.out"),
-        stdout=joinpath(args.outputdir, name * "-boottrees.nw")))
+                -out $(joinpath(args.outputdir, name * "-boottrees.nw"))`))
     end
 
     @info "using Booster to compute support values"
@@ -82,8 +82,9 @@ function julia_main()::Cint
         -b $(joinpath(args.outputdir, name * "-boottrees.nw")) \
         -o $(joinpath(args.outputdir, name * "-supporttree.nw"))`,
         stderr=joinpath(args.outputdir, "booster.log")))
-
     end # timeit
+    # remove bootstrap alignments
+    run(`rm -f $(joinpath(args.outputdir, "seq_boot"))$(collect(0:99)).ph`)
     @info "stopping run"
     @info "timing" show(time) println("")
     return 0
