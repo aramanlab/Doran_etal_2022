@@ -13,6 +13,7 @@ using Glob
 
 const NCUTS = 100
 const NPERMS = 5
+const TODAY = "2022-08-11"
 taxaranklabels = [:Phylum, :Class, :Order, :Family, :Genus, :Species]
 
 
@@ -48,10 +49,12 @@ function collectMI_across_treedepth(clusterids, clustersmps, IDS, ptax; doshuffl
 end
 
 
-uniprot = readh5ad(joinpath(datadir(), "exp_pro", "UP7047", "2020_02_UP7047.h5ad"))
-UPtaxa = uniprot.obs[:, [:proteomeID, :Phylum, :Class, :Order, :Family, :Genus, :Species]];
-UPIDS = uniprot.obs_names.vals
-close(uniprot.file)
+# uniprot = readh5ad(joinpath(datadir(), "exp_pro", "UP7047", "2020_02_UP7047.h5ad"))
+rowmeta = CSV.read(datadir("exp_raw", "UP7047", "UProwmeta.csv"), DataFrame);
+UPtaxa = rowmeta[:, [:proteomeID, :Phylum, :Class, :Order, :Family, :Genus, :Species]];
+UPtaxa = coalesce.(UPtaxa, "")
+UPIDS = UPtaxa.proteomeID
+# close(uniprot.file)
 
 ## Caclulate MI curves for SPI tree ##
 spi_tree = readnw(read(joinpath(projectdir(), "_research", "runSPIonUP7047rows", "2020_02_UP7047-supporttree.nw"), String));
@@ -71,7 +74,7 @@ as_polytomy!(spi_tree, fun=n->NewickTree.distance(n)<1e-8)
 #     tstatdf[!, "MI_perm$i"] = tmpdf.MI
 # end
 @info "write csv results SPI tree..."
-CSV.write(joinpath(datadir(), "exp_pro", "UP7047", "2022-06-13_MI-spitree_treedepth-by-taxa.csv"), tstatdf)
+CSV.write(joinpath(datadir(), "exp_pro", "UP7047", "$(TODAY)_MI-spitree_treedepth-by-taxa.csv"), tstatdf)
 
 ## Caclulate MI curves for altdist trees ##
 @info "starting on Alt Dist trees"
@@ -97,7 +100,7 @@ for (nm, tree) in zip(altdistnames, altdisttrees)
     #     tstatdf[!, "MI_perm$i"] = tmpdf.MI
     # end
     @info "writing csv results for $nm..."
-    CSV.write(joinpath(datadir(), "exp_pro", "UP7047", "2022-06-13_MI-$(nm)_treedepth-by-taxa.csv"), tstatdf)
+    CSV.write(joinpath(datadir(), "exp_pro", "UP7047", "$(TODAY)_MI-$(nm)_treedepth-by-taxa.csv"), tstatdf)
 end
 end # time
 
@@ -114,5 +117,5 @@ end
 
 maxdepthdf
 
-CSV.write(datadir("exp_pro", "UP7047", "2022-06-13_treedepths.csv"), maxdepthdf)
+CSV.write(datadir("exp_pro", "UP7047", "$(TODAY)_treedepths.csv"), maxdepthdf)
 
