@@ -15,6 +15,7 @@ include(joinpath(srcdir(), "parsephylip.jl"))
     @argumentdefault Int 100 nboot "-b" "--nboot"
     @argtest nboot n->0≤n "nboot must be positive"
     @argumentdefault Int 0 loglevel "-l" "--loglevel"
+    @argumentdefault Symbol :notneeded model "-m" "--model"
 end
 
 function julia_main()::Cint
