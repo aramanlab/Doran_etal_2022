@@ -856,6 +856,12 @@ git-tree-sha1 = "41d3e0fc5f7bd02e1ea0884aa1ce55cb604adb40"
 uuid = "4028151b-0928-560d-8573-53f5e508f174"
 version = "3.2.7+0"
 
+[[deps.MultipleTesting]]
+deps = ["Distributions", "SpecialFunctions", "StatsBase"]
+git-tree-sha1 = "94df14d821baa34662a1492b10615125cbebd47b"
+uuid = "f8716d33-7c4a-5097-896f-ce0ecbd3ef6b"
+version = "0.5.1"
+
 [[deps.MultivariateStats]]
 deps = ["Arpack", "LinearAlgebra", "SparseArrays", "Statistics", "StatsBase"]
 git-tree-sha1 = "6d019f5a0465522bbfdd68ecfad7f86b535d6935"
