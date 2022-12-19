@@ -34,3 +34,17 @@ function asdistancematrix(pairsvec; defaultval=zeros)
     end
     return distmtx
 end
+
+function match_column_order(mtx::Matrix{<:Number}, cnames_src, cnames_dst)
+    # make destination matrix
+    dstmtx = zeros(eltype(mtx), size(mtx, 1), length(cnames_dst))
+
+    # find matching columns
+    rawidxs = indexin(cnames_src, cnames_dst)
+    mask = .!isnothing.(rawidxs)
+    matchedcols = filter(x->.!isnothing.(x), rawidxs)
+    
+    # set values where we have matched columns
+    dstmtx[:, matchedcols] .= mtx[:, mask]
+    return dstmtx
+end

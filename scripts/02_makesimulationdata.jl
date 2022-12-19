@@ -39,10 +39,10 @@ using DataStructures: counter, inc!
 # read metadata
 df = CSV.read(joinpath(datadir(), "exp_raw", "GTDB", "bac120_taxonomy_r202.tsv"), DataFrame, header=false);
 bacdf = df |>
-    df->transform(df, 
-        :Column1 => :ID, 
-        :Column2 => ByRow((c)->split(c, ";")) => [:domain, :phylum, :class, :order, :family, :genus, :species]) |>
-    df->select(df,[:ID, :domain, :phylum, :class, :order, :family, :genus, :species]);
+        df -> transform(df,
+    :Column1 => :ID,
+    :Column2 => ByRow((c) -> split(c, ";")) => [:domain, :phylum, :class, :order, :family, :genus, :species]) |>
+              df -> select(df, [:ID, :domain, :phylum, :class, :order, :family, :genus, :species]);
 # read full tree
 gtdbtree = readnw(read(joinpath(datadir(), "exp_pro", "GTDB", "bac120_r202.nw"), String));
 
@@ -51,12 +51,12 @@ gtdbtree128 = filter(prewalk(gtdbtree)) do node
     length(getleaves(node)) == 128
 end |> first;
 rootname128 = bacdf[indexin(name.(getleaves(gtdbtree128)), bacdf.ID), :family] |> unique |> first
-open(joinpath(treedir,"gtdb-$rootname128-t128.nw"), "w") do io
+open(joinpath(treedir, "gtdb-$rootname128-t128.nw"), "w") do io
     # strip all node names and branch supports because seqgen doesn't like them
-    treestring = replace(nwstr(gtdbtree128), r"[a-zA-Z0-9._]*(?=:)" => s"") 
+    treestring = replace(nwstr(gtdbtree128), r"[a-zA-Z0-9._]*(?=:)" => s"")
     # replace with unique tip names, tree topology is maintained
     c = counter(String)
-    treestring = replace(treestring, r"(?<=[\(,])(?=:)" => m->"Tip$(lpad(inc!(c,m), 3, "0"))")
+    treestring = replace(treestring, r"(?<=[\(,])(?=:)" => m -> "Tip$(lpad(inc!(c,m), 3, "0"))")
     write(io, treestring * "\n")
 end
 
@@ -65,12 +65,12 @@ gtdbtree64 = filter(prewalk(gtdbtree)) do node
     length(getleaves(node)) == 64
 end |> first;
 rootname64 = bacdf[indexin(name.(getleaves(gtdbtree64)), bacdf.ID), :genus] |> unique |> first
-open(joinpath(treedir,"gtdb-$rootname64-t64.nw"),"w") do io
+open(joinpath(treedir, "gtdb-$rootname64-t64.nw"), "w") do io
     # strip all node names and branch supports because seqgen doesn't like them
-    treestring = replace(nwstr(gtdbtree64), r"[a-zA-Z0-9._]*(?=:)" => s"") 
+    treestring = replace(nwstr(gtdbtree64), r"[a-zA-Z0-9._]*(?=:)" => s"")
     # replace with unique tip names, tree topology is maintained
     c = counter(String)
-    treestring = replace(treestring, r"(?<=[\(,])(?=:)" => m->"Tip$(lpad(inc!(c,m), 2, "0"))")
+    treestring = replace(treestring, r"(?<=[\(,])(?=:)" => m -> "Tip$(lpad(inc!(c,m), 2, "0"))")
     write(io, treestring * "\n")
 end
 
@@ -79,26 +79,26 @@ gtdbtree32 = filter(prewalk(gtdbtree)) do node
     length(getleaves(node)) == 32
 end |> first;
 rootname32 = bacdf[indexin(name.(getleaves(gtdbtree32)), bacdf.ID), :genus] |> unique |> first
-open(joinpath(treedir,"gtdb-$rootname32-t32.nw"),"w") do io
+open(joinpath(treedir, "gtdb-$rootname32-t32.nw"), "w") do io
     # strip all node names and branch supports because seqgen doesn't like them
-    treestring = replace(nwstr(gtdbtree32), r"[a-zA-Z0-9._]*(?=:)" => s"") 
+    treestring = replace(nwstr(gtdbtree32), r"[a-zA-Z0-9._]*(?=:)" => s"")
     # replace with unique tip names, tree topology is maintained
     c = counter(String)
-    treestring = replace(treestring, r"(?<=[\(,])(?=:)" => m->"Tip$(lpad(inc!(c,m), 2, "0"))")
+    treestring = replace(treestring, r"(?<=[\(,])(?=:)" => m -> "Tip$(lpad(inc!(c,m), 2, "0"))")
     write(io, treestring * "\n")
 end
 
 # extract 16 taxa subtree
 gtdbtree16 = filter(prewalk(gtdbtree)) do node
     length(getleaves(node)) == 16
-end |> x->getindex(x, 8); # choosing 8th tree to sample something other than psudomonas
+end |> x -> getindex(x, 8); # choosing 8th tree to sample something other than psudomonas
 rootname16 = bacdf[indexin(name.(getleaves(gtdbtree16)), bacdf.ID), :genus] |> unique |> first
-open(joinpath(treedir,"gtdb-$rootname16-t16.nw"),"w") do io
+open(joinpath(treedir, "gtdb-$rootname16-t16.nw"), "w") do io
     # strip all node names and branch supports because seqgen doesn't like them
-    treestring = replace(nwstr(gtdbtree16), r"[a-zA-Z0-9._]*(?=:)" => s"") 
+    treestring = replace(nwstr(gtdbtree16), r"[a-zA-Z0-9._]*(?=:)" => s"")
     # replace with unique tip names, tree topology is maintained
     c = counter(String)
-    treestring = replace(treestring, r"(?<=[\(,])(?=:)" => m->"Tip$(lpad(inc!(c,m), 2, "0"))")
+    treestring = replace(treestring, r"(?<=[\(,])(?=:)" => m -> "Tip$(lpad(inc!(c,m), 2, "0"))")
     write(io, treestring * "\n")
 end
 
@@ -127,7 +127,7 @@ for Nf in nfeatures
     mkpath(msadir)
     for f in readdir(treedir)
         fn = first(split(f, "."))
-        run(pipeline(`$(seqgen()) -q -z$(seed) -s $(gtdbmsalength/Nf) -or -l$Nf -mHKY`, 
+        run(pipeline(`$(seqgen()) -q -z$(seed) -s $(gtdbmsalength/Nf) -or -l$Nf -mHKY`,
             stdin=joinpath(treedir, f),
             stdout=joinpath(msadir, fn * "-l$Nf-b4.phy")))
     end
@@ -150,7 +150,7 @@ mkpath(srctreeplotsdir)
 for tf in readdir(treedir)
     fn = first(split(tf, "."))
     run(pipeline(`$(gotree()) draw svg -c -w 400 -H 400 --no-tip-labels`,
-    stdin = joinpath(treedir, tf),
-    stdout = joinpath(srctreeplotsdir, fn * ".svg")
+        stdin=joinpath(treedir, tf),
+        stdout=joinpath(srctreeplotsdir, fn * ".svg")
     ))
 end

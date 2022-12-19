@@ -40,7 +40,7 @@ function julia_main()::Cint
         println(io, spitree)
     end
 
-    # Bootstrap (takes ~5hrs with 100 bootstraps on 5 processes in the background of my MacBook Pro)
+    # Bootstrap (takes ~5hrs with 100 bootstraps on 5 processes in the background of my 32GB 2019 MacBook Pro)
     if args.nboot > 0
         @info "Starting Bootstrap with $(args.nboot) across $(nworkers()) processes"
         @time begin
