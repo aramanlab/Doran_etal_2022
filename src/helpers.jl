@@ -1,3 +1,5 @@
+using SparseArrays
+
 function lastline(io)
     local line
     for l in eachline(io)
@@ -47,4 +49,36 @@ function match_column_order(mtx::Matrix{<:Number}, cnames_src, cnames_dst)
     # set values where we have matched columns
     dstmtx[:, matchedcols] .= mtx[:, mask]
     return dstmtx
+end
+
+onehotencode(seqs::AbstractVector{<:AbstractString}) = onehotencode(_stringcolumntocharmtx(seqs))
+function onehotencode(chardf::AbstractMatrix{<:Char})
+    ohemtx = Vector()
+    for col in eachcol(chardf)
+        push!(ohemtx, indicatormat(col)')
+    end
+    return sparse(hcat(ohemtx...))
+end
+
+function _stringcolumntocharmtx(seqs)
+    Matrix(DataFrame(reduce(hcat, collect.(seqs)) |> permutedims, [string(i) for i in 1:length(first(seqs))]))
+end
+
+function writefasta(path, ids, seqs)
+    FASTA.Writer(open(path, "w")) do io
+        for (id, seq) in zip(ids, seqs) 
+            write(io, FASTA.Record(id, seq))
+        end
+    end
+end
+
+function readfasta(path) 
+    FASTA.Reader(open(path)) do io
+        recs = collect(io)
+        DataFrame(
+            :label => String.(identifier.(recs)), 
+            :sample_id => String.(description.(recs)), 
+            :sequence => String.(sequence.(recs)),
+        )
+    end
 end
