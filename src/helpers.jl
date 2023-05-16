@@ -82,3 +82,48 @@ function readfasta(path)
         )
     end
 end
+
+# function writephylip(filename, M, ids)
+#     format_id(s) = rpad(s, 10)[1:10]
+#     n = size(M, 1)
+#     open(filename, "w") do io
+#         println(io, string(n))
+#         for i in axes(M, 1)
+#             print(io, format_id(ids[i]), "    ")
+#             for j in 1:i
+#                 print(io, string(round(M[i, j], digits=5)), "  ")
+#             end
+#             println(io)
+#         end
+#     end
+# end
+
+function writephylip(filename, M, ids)
+    format_id(s) = rpad(s, 10)[1:10]
+    n = size(M, 1)
+    open(filename, "w") do io
+        println(io, string(n))
+        for j in axes(M, 2)
+            print(io, format_id(ids[j]), "    ")
+            for i in axes(M, 1)
+                print(io, string(round(M[i, j], digits=5)), "  ")
+            end
+            println(io)
+        end
+    end
+end
+
+function ladderize!(t; rev=false)
+    function walk!(n)
+        if isleaf(n)
+            return 1
+        else 
+            numleaves = [walk!(c) for c in children(n)]
+            n.children .= n.children[sortperm(numleaves, rev=rev)]
+            return sum(numleaves)
+        end        
+    end
+    walk!(t)
+end
+
+compose(f, n) = reduce(∘, ntuple(_ -> f, n))

@@ -1,0 +1,8 @@
+project:
+  render: 
+   - "*.qmd"
+   - "*.ipynb"
+  output-dir: "../../docs"
+
+format: 
+  html

@@ -1,9 +1,9 @@
 using DrWatson
-@quickactivate "SPIdemo"
+@quickactivate "Doran_etal_2022"
 using Distributed
 
 @everywhere using DrWatson
-@everywhere @quickactivate "SPIdemo"
+@everywhere @quickactivate "Doran_etal_2022"
 @everywhere using SPI
 @everywhere using StatsBase: sample
 
