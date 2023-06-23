@@ -1,0 +1,824 @@
+---
+title: "Supplementary Discussion"
+author: Benjamin Doran et al.
+date: today
+number-sections: true
+number-depth: 3
+toc: true
+jupyter: julia-1.9
+figure-format: pdf
+crossref:
+    fig-title: Supplement Figure
+    fig-prefix: Supp. Fig. 
+format:
+    pdf
+---
+
+```{julia}
+#| echo: false
+using DrWatson
+@quickactivate "Doran_etal_2022"
+using LinearAlgebra
+using LaTeXStrings
+using Plots
+theme(:default, 
+    fontfamily="Computer Modern",
+    grid=false, 
+    label="", 
+    tickdir=:out)
+```
+
+# Relating the statistical structure of co-variation with taxonomic relatedness in a simple example of serial diversifications
+
+# Incorporating an example of convergent evolution into the statistical structure of co-variation
+
+# Defining a Spectral Tree of newly sequenced strains considering the co-evolutionary pattern of previously sequenced bacteria
+
+# How similarity and dissimilarity are encoded into spectral components
+
+We sought to understand the mathematics of why spectral factorization reveals hierarchical scales of relatedness. In answer, we found it is because the similarity and differences between sub-populations are split across separate spectral components. Specifically, we show that (i) an ensemble of systems with two sub-populations will have exactly 2 irreducible spectral components up to the exact point at which those populations become identical; (ii) the change in magnitude for these spectral components — their eigenvalues — are equal and opposite to each other as we increase the degree of relatedness between the sub-populations; and (iii) the major eigenvector encodes the similarity of the sub-populations and the lesser eigenvector encodes the sub-population's dissimilarity for all points between the extrema where the sub-populations are identical or completely independent.
+
+As it is not guaranteed that the reader has a background in the required mathematics, we will split this section into two parts. Section §4.1 will delve into the necessary detail regarding eigenvalue decomposition, the determinant, and the characteristic polynomial for readers to understand the connections between these concepts. Section §4.2 will detail a specific case of an ensemble of 3 systems, and show how changing the degree of relatedness between these systems changes specific aspects of the eigenspectrum.
+
+## Linear Algebra Background
+
+### What are eigenvectors?
+
+For readers unfamiliar with linear algebra, some of the early applications for eigen decomposition in the 1700s were developed to describe the linear transformations of physical systems (rotations, shifting, scaling, and shearing of rigid bodies) [^hawkins]. Of particular interest in these descriptions are the principle axes or "eigenvectors" of the transformation which are the only vectors that do not change direction during the transform. The eigenspectrum describes the complete set of axes "eigenvectors", and is defined as the non-zero solutions to this equation
+
+\begin{align}
+C\vec{v} = \lambda\vec{v}
+\end{align}
+
+[^hawkins]: Hawkins, T. Cauchy and the spectral theory of matrices. Historia Mathematica 2, 1–29 (1975).
+
+In Equation 1, $C$ is the linear transformation, represented as a matrix of real numbers; $\vec{v}$ is the eigenvector, represented as a list of real numbers; and $\lambda$ is the eigenvalue, a real number that shortens or lengthens the eigen vector.
+
+<!-- :::{.callout-note collapse=false}
+As an example, this is one specific case of Equation 1. 
+
+\begin{align*}
+\begin{bmatrix}2&0\\0&2\end{bmatrix}\begin{bmatrix}1\\1\end{bmatrix} = 2\begin{bmatrix}1\\1\end{bmatrix}
+\end{align*}
+
+We can see in performing the matrix multiplications that both of these expressions are equal to the vector $[2,2]^t$
+
+\begin{align*}
+\begin{bmatrix}2&0\\0&2\end{bmatrix}\begin{bmatrix}v_1\\v_2\end{bmatrix} &= \begin{bmatrix}(2\times v_1) + (0\times v_2)\\(0\times v_1)+(2\times v_2)\end{bmatrix} \\
+&= \begin{bmatrix}(2\times 1) + (0\times1)\\(0\times1)+(2\times1)\end{bmatrix} \\
+& = \begin{bmatrix}2\\2\end{bmatrix} \\
+&= 2\begin{bmatrix}1\\1\end{bmatrix}
+\end{align*}
+::: -->
+
+The eigenvectors and eigenvalues are useful precisely because they are the only stable descriptors of the transformation and can be used to consistently describe positions both before and after the transform.
+
+To mathematically solve for these eigenvectors, one common technique is to first find the eigenvalues which are the solutions to Equation 2, and then substitute these eigenvalues into Equation 1 and solve for each of the eigenvectors ($\vec{v}$). All applications of spectral factorization (i.e. SVD and PCA) use this fundamental equation to define their spectral components ('eigenvectors').
+
+\begin{align}
+\det(C - \lambda I) = 0
+\end{align}
+
+In Equation 2, $C$ is again the linear transformation; $I$ is the identity matrix of the same size as $C$, defined as having $1$s along the diagonal and $0$ for all other entries; $det()$ is the determinant function which describes a change in the degrees of freedom or number of dimensions after a linear transformation; and $\lambda$ is the variable that we are trying to infer (i.e., $\lambda$ equals the eigenvalue when Equation 2 is true).
+
+As we will see, Equation 2 can also be expressed as the "characteristic polynomial" of the transform.
+
+\begin{align}
+\det(\lambda I - C_{n\times n}) = \lambda^n - c_{n-1}\lambda^{n-1} + c_{n-2}\lambda^{n-2}  - c_{n-3}\lambda^{n-3}... = 0
+\end{align}
+
+The characteristic polynomial is a monic alternating sign polynomial of degree $n$ where $n$ is the minimum dimension of $C$. A monic polynomial means that the leading coefficient is always equal to $1$. And alternating sign means that the sign of each subsequent term alternates in sign from $+$ to $-$ and back. The roots of this polynomial, (i.e., the values of $\lambda$ that set it equal to zero) are the eigenvalues of Equation 2. 
+
+<!-- :::{.callout-note collapse=false}
+Note the change from $\det(C - \lambda I)$ in Equation 2 to $\det(\lambda I - C)$ in Equation 3.
+
+This factor of $-1$ ensures that the characteristic polynomial is always expressed with a positive leading coefficient. The definition in Equation 2, $\det(C - \lambda I)$ has a negative leading coefficient for any matrix $C$ with an odd number of rows and columns. 
+
+It can be awkward to display the expansion of $\det(\lambda I - C)$, so we forgo showing the $-1$ factor in this document until the last step to finish with the canonical form of the characteristic polynomial.
+::: -->
+
+### Rational for using $\det(C-\lambda I) = 0$
+To fully intuit the logic behind for using the equation $\det(C-\lambda I) = 0$ to solve for eigenvalues, it will help to review how matrices in linear algebra describe transformation of space. 
+
+If we multiply a vector $\vec{u}$ by a matrix $C$ we will get a new vector that may be pointing in a new direction $\vec{v}$. $C\vec{u} = \vec{v}$ To reiterate, there are special vectors for each matrix $C$ that do *not* change direction after the transformation -- $C\vec{v} = \lambda\vec{v}$. Instead they only change in magnitude. These are exactly the eigenvectors of the matrix, and the magnitude (length of the vector) $\lambda$ is the eigenvalue. These eigenvectors and values are particularly important for describing the transformation and describing how points move through the transformation because they are the only stable axes during the transformation.
+
+```{julia}
+#| fig-cap: example of linear transformation on regular vector (left) versus an eigen vector of that transformation (right)
+#| echo: false
+#| label: fig-vectors
+p1 = plot(framestyle=:zerolines, )
+p1 = plot!([0, 2], [0, 3]; arrow=true, label=L"\vec{u}")
+p1 = plot!([0, 3], [0, 2]; linestyle=:dash, arrow=true, label=L"C\vec{u} = \vec{v}")
+
+p2 = plot(framestyle=:zerolines,)
+p2 = plot!([0, 2], [0, 2]; arrow=true, label=L"\vec{v}")
+p2 = plot!(1.5 * [0, 2], 1.5 *  [0, 2]; linestyle=:dash, arrow=true, label=L"C\vec{v} = \lambda \vec{v}")
+plot(p1, p2; link=:y, 
+    size=(600, 300), 
+    grid=true,
+    # format=:png, dpi=300,
+)
+```
+
+To solve for the eigenvectors we can do some algebraic manipulations to factor out $\vec{v}$ within Equation 1
+
+\begin{align*}
+    C\vec{v} &=  \lambda\vec{v} \\
+    C\vec{v} - \lambda\vec{v} &= 0 \\
+    C\vec{v} - \lambda I \vec{v} &= 0 \\
+    (C - \lambda I )\vec{v} &= 0 \\
+\end{align*}
+
+
+After these manipulations we have the eigenvector $\vec{v}$ multiplied by $(C - \lambda I)$ a matrix of our original transform $C$ subtracting out the eigenvalue on the diagonal.
+
+<!-- :::{.callout-note collapse=false}
+Expanding at this stage would show this form:
+
+\begin{align*}
+ (C - \lambda I)\vec{v} = \begin{bmatrix}
+    c_{1,1} - \lambda&\cdots&c_{1,n} \\
+    \vdots&\ddots&\vdots \\
+    c_{n,1}&\cdots&c_{n,n}- \lambda\\
+    \end{bmatrix} \begin{bmatrix}v_1\\\vdots\\v_n\end{bmatrix} = 0
+\end{align*}
+::: -->
+
+Notice that making $\vec{v}$ equal to the zero vector is a trivial solution for all matrices. Because this solution is true for all matrices, eigenvectors are generally defined as only the non-zero solutions to Equation 1. 
+
+So when is $\vec{v}$ non-zero, and yet multiplying by $(C - \lambda I)$ results in zero? Our prior manipulations were useful for answering this question because they let us play a quick thought experiment. Lets take a moment to assume that $(C - \lambda I)$ is invertible. Invertible means that there exists some matrix $(C - \lambda I)^{-1}$ that would completely reverse the transformation and place every vector back where it started, (i.e., the transformation matrix is canceled by its inverse transformation). So $(C - \lambda I)^{-1}(C - \lambda I) = I$ the identity matrix because for any matrix $\cancel{A^{-1}A}\vec{v} = I\vec{v} = \vec{v}$. 
+
+If we place this inverse into the eigenvector equation from before we see that if $(C - \lambda I)$ is invertible than $\vec{v}$ **must** equal the zero vector. 
+
+\begin{align*}
+     (C - \lambda I)\vec{v} &= 0 \\
+     (C - \lambda I)^{-1} (C - \lambda I)\vec{v} &= (C - \lambda I)^{-1}0 \\
+    I\vec{v} &= 0 \\
+    \vec{v} &= 0 \\
+\end{align*}
+
+From this thought experiment we see that for $\vec{v}$ to be non-zero $(C - \lambda I)$ must be non-invertible. A matrix being non-invertible essentially means that at least 2 vectors are placed in the same location after the transformation $A\vec{u} = A\vec{w}$. In geometric terms, we can think of this as an reduction in dimensionality; a line being compressed into a single point, a plane being compressed into a line or point. 
+
+We can then interpret our search for eigenvalues as searching for intrinsic scales of dimensionality. We can expand a sphere from the origin and at particular radii we are canceling out dimensional axes, i.e. for particular values of $\lambda$ we are subtracting the full magnitude of a principal axis in our observed data which flattens all observations along that axis to zero.
+
+The determinant function is how we measure this collapse of dimensionality. In the 2 dimensional case,the geometric interpretation behind the determinant is that it measures the area of the unit square after a transformation by matrix $C$. If the transform $C$ compresses all the points in the area of the unit square onto a single line or point, (a) the area of the unit square after the transform equals zero $\det(C)=0$, (b) this transform is not invertible. The transform is not invertible because multiple points are moved onto the same coordinate by the transform, and so to move every point back to its original location would require information lost by the transform. The determinant is used for finding eigenvalues because it is the exact measure of when a transform is non-invertible (i.e. has a loss of dimensionality).
+
+```{julia}
+#| echo: false
+#| fig-cap: example of unit square after different linear transforms. The last case (right) shows example of the 2d plane being compressed to a single line at which point the determinant equals zero
+#| label: fig-2d-determinant
+plot(framestyle=:zerolines, lims=(-.25, 2))
+p1 = plot!([(0, 0), (0, 1), (1,1), (1, 0), (0,0)]; 
+    fill=0, 
+    xlabel="unit square",
+    label="",
+)
+
+plot(framestyle=:zerolines, lims=(-.25, 2), legend=:topright)
+p2 = plot!([(0, 0), (.5, 1), (1.5,1.5), (1, .5), (0,0)];
+     fill=0, 
+     xlabel="unit square after transform",
+     label="",
+)
+
+plot(framestyle=:zerolines, lims=(-.25, 2), legend=:topright)
+p3 = plot!([(0, 0), (.5, .5), (1.5,1.5), (.5, .5), (0,0)];
+    fill=0, 
+    xlabel="determinant = 0",
+    label="",
+)
+plot(p1, p2, p3; link=:y, layout=grid(1,3), 
+    grid=true,
+    size=(750, 250),
+    tickfontsize=5, 
+    xlabelfontsize=7, 
+    bottommargin=2Plots.Measures.mm,
+    output=:png, dpi=300
+)
+```
+
+### The determinant defined
+
+Analytically, the determinant of a 2 x 2 matrix is defined as:
+
+\begin{align*}
+\det{\begin{pmatrix} a & b \\ c & d \end{pmatrix}} = \begin{vmatrix} a & b \\ c & d \end{vmatrix} = ad - bc
+\end{align*}
+
+And it is defined recursively for larger matrices.
+
+\begin{align*}
+\det(C_{n\times n}) = \sum_{j=1}^n \sigma_j C_{1,j} \det(C_{-1, -j})
+\end{align*}
+<!-- $$ {#eq-recursivedeterminant} -->
+
+where $\sigma_j$ is defined as $+1$ if $j$ is odd and $-1$ if $j$ is even; $C_{-1, -i}$ is an $n-1 \times n-1$ matrix made by removing the first row and $j$th column. 
+
+For example, here is the first layer of recursion for a 3 x 3 matrix, which is defined as an alternating sum of 2 x 2 determinants weighted by each complementary element of the top row.
+
+\begin{align*}
+\left|\begin{array}{ccc}
+    a & b & c \\
+    d & e & f \\
+    g & h & i \\
+\end{array}\right| \\
+= a\left|\begin{array}{cc}e&f\\h&i\end{array}\right| -
+    b\left|\begin{array}{cc}d&f\\g&i\end{array}\right| +
+    c\left|\begin{array}{cc}d&e\\g&h\end{array}\right|
+\end{align*}
+
+Expanded fully, the determinant forms a sum of $n$ factorial ($n!$) products where $n$ is the number of columns in the matrix.
+
+\begin{align*}
+aei - afh - bdi + bfg + cdh - ceg
+\end{align*}
+
+### The relationship between determinant and characteristic polynomial
+
+When all elements of the matrix are known, this sum of products collapses down to a single number: the result of the determinant. When there is an unknown variable in the matrix, like with with our eigenvalue problem in Equation 2, the determinant instead collapses to a polynomial of the unknown variable. This polynomial is the characteristic polynomial of the matrix.
+
+As we can show with a 3x3 example:
+
+\begin{align*}
+0 &= \det(C - \lambda I) \\
+&= \left|\begin{array}{ccc}
+    a - \lambda & b & c \\
+    d & e - \lambda & f \\
+    g & h & i - \lambda \\
+\end{array}\right| \\
+&= (a - \lambda)\left|\begin{array}{cc}e - \lambda&f\\h&i - \lambda\end{array}\right| -
+    b\left|\begin{array}{cc}d&f\\g&i - \lambda\end{array}\right| +
+    c\left|\begin{array}{cc}d&e - \lambda\\g&h\end{array}\right|
+\end{align*}
+
+When expanded into the alternating sum of $n!$ terms we see that some of these terms have more instances of $\lambda$ than others
+
+\begin{align*}
+(a - \lambda)(e - \lambda)(i - \lambda) - (a - \lambda)fh - bd(i - \lambda) + bfg + cdh - c(e - \lambda)g
+\end{align*}
+
+We can sort by the number of instances of $\lambda$
+
+\begin{align*}
+(a - \lambda)(e - \lambda)(i - \lambda) - fh(a - \lambda) - bd(i - \lambda) - cg(e - \lambda) + bfg + cdh
+\end{align*}
+
+To continue, let's make this more specific and take it term by term. 
+
+For this example we will use the matrix 
+
+\begin{align*}
+C = \begin{bmatrix}1&1&1\\1&1&1\\1&1&1\end{bmatrix}
+\end{align*}
+
+So for this first term we can expand 
+
+\begin{align*}
+(a - \lambda)(e - \lambda)(i - \lambda) &= (1 - \lambda)(1 - \lambda)(1 - \lambda) \\
+&= -\lambda^3 + 3\lambda^2 - 3\lambda + 1
+\end{align*}
+
+for the second, third, and fourth terms we get 
+
+\begin{align*}
+-fh(a - \lambda) &= \\
+-bd(i - \lambda) &= \\
+-cg(e - \lambda) &= \\
+-(1\times 1)(1 - \lambda) &= \lambda - 1
+\end{align*}
+
+and our fifth and sixth terms both equal $+1$.
+
+\begin{align*}
+bfg = cdh = 1\cdot 1 \cdot 1 =  1
+\end{align*}
+
+Putting them together we get
+
+\begin{align*}
+&(-\lambda^3 + 3\lambda^2 - 3\lambda + 1) + (\lambda - 1) + (\lambda - 1) + (\lambda - 1) + 1 + 1  \\
+&= -\lambda^3 + 3\lambda^2 - 3\lambda + \lambda + \lambda + \lambda - 1 - 1 - 1 + 1 + 1 + 1 \\
+&= -\lambda^3 + 3\lambda^2 - 3\lambda + 3\lambda + 3 - 3 \\
+&= -\lambda^3 + 3\lambda^2
+\end{align*}
+
+To finish, we multiply by -1 to get the canonical form of the characteristic polynomial because the characteristic polynomial is technically defined by $\det(\lambda I - C )$ rather than $\det(C - \lambda I)$
+
+\begin{align*}
+\det(\lambda I - C) = \lambda^3 - 3\lambda^2 \text{ when } C = \begin{bmatrix}1&1&1\\1&1&1\\1&1&1\end{bmatrix}
+\end{align*}
+
+
+What we have described so far is that (i) eigenvectors are the stable principal axes of linear transformations; (ii) The determinant is used to solve for eigenvalues (and by proxy eigenvectors) because it measures when a principal axis (i.e., eigenvector) has been collapsed to zero and canceled out; (iii) the the eigenvalue problem in Equation 2 can be equivalently represented by the characteristic polynomial simply by expanding the determinant of a matrix with an unknown variable.
+
+### The eigenspectrum and singular value decomposition
+This section has so far discussed how to find an individual eigenvector-eigenvalue pair ('spectral component'). But it is important to remember that the original transform $C$ is made up of the set of all spectral components. This concept is important for understanding how spectral factorization can describe data and physical observations rather than abstract linear transforms. Specifically, the full set of spectral components allows us to factor any arbitrary matrix into separate components of information.
+
+To show this factorization, we start with the transform $C$ and right multiply by its collection of eigenvectors $V$ this has the effect of scaling each eigenvector by it's associated eigenvalue. contained in matrix $\Lambda$ with each $\lambda_i$ on the diagonal. (this is exactly because these are the vectors that do not change direction and are only scaled by the transform.)
+
+\begin{align*}
+CV = V\Lambda
+\end{align*}
+
+Because the collection of eigenvectors are a set of linearly independent unitary vectors (each vector has a length of $1$ and is pointed in a mutually orthogonal direction -- at right angle -- to all other eigenvectors), we know that $V$ has an inverse and that inverse is its transpose $VV^{-1} = VV^{t} = V^{t}V = I$
+
+So
+
+\begin{align*}
+C = V\Lambda V^t
+\end{align*}
+
+This equation tells us how to recreate our linear transform from its set of spectral components. More explicitly expanding this matrix multiplication, the transform $C$ can be equivalently expressed as the sum
+
+\begin{align*}
+C = V\Lambda V^t = \sum_i \lambda_i v_i v_i^t
+\end{align*}
+
+Here $\lambda_i v_i$ is the $i$th scaled eigenvector and $v_i^t$ is its transpose. The multiplication $\lambda_i v_i v_i^t$ tells us is how each original axis (usually measured traits) in $v_i^t$ gets transformed by -- projected onto -- this spectral component $lambda_i v_i$. It results in a matrix the same size as the original transform $C$ and is called a rank 1 transform because it is composed of only a single vector. This representation emphasizes that each spectral component is describing one layer of information about the original matrix $C$. Taken together the full set of spectral components completely recapitulates the original matrix.
+
+Let us now introduce the singular value decomposition (SVD). The SVD is an extension of eigen decomposition for non-square matrices. And allows the factorization of any matrix into 3 new matrices; $U$ the left singular vectors; $\Sigma$ a matrix with the singular values along the diagonal; and $V^t$ the transposed right singular vectors.
+
+\begin{align*}
+M = U\Sigma V^t
+\end{align*}
+
+To briefly see the relation to the eigen decomposition we can write
+
+\begin{align*}
+MM^t &= U\Sigma V^t V \Sigma U^t \\
+MM^t &= U\Sigma \cancel{V^t V} \Sigma U^t \\
+MM^t &= U\Sigma^2 U^t \\
+\end{align*}
+
+where $MM^t$ is a matrix times its transpose -- for scaled and centered matrices this is equivalent to the row-wise covariance matrix; $U$ is both the left singular vectors of $M$ and the eigenvectors of $MM^t$; and $\Sigma$ is a matrix with the singular values on the diagonal elements and $\Sigma^2$ are the eigenvalues of $MM^t$.
+
+<!-- :::{.callout-note collaps=false}
+
+Covariance is the same as a matrix multiplication when a matrix is scaled and centered on the origin
+
+matrix multiplication of $X$ with $i$ rows and $n$ columns and $Y$ with $n$ rows and $j$ columns
+
+\begin{align*}
+XY = \begin{bmatrix} 
+\sum_n x_{1n}y_{n1} & \cdots & \sum_n x_{1n}y_{nj} \\
+\vdots & \ddots & \vdots \\
+\sum_n x_{in}y_{n1} & \cdots & \sum_n x_{in}y_{nj} \\
+\end{bmatrix} \\
+\end{align*}
+
+For each element in the resulting matrix we can get to the covariance by scaling by the number of measurements $\frac{1}{n}$ and subtracting each mean $\bar{x}$ and $\bar{y}$.
+
+\begin{align*}
+X_iY_j = \sum_{i=n}^n(x_{in})(y_{jn})
+\rightarrow \frac{1}{n}\sum_{i=n}^n(x_{in} - \bar{x})(y_{jn} - \bar{y})
+=\text{cov}(X_i, Y_j)
+\end{align*}
+::: -->
+
+## How relatedness affects the eigenspectrum
+
+### Creating an ensemble of systems with varying degrees of relatedness
+
+In this section we will use the concepts relating the eigenspectrum, the determinant, and the characteristic polynomial to show how the eigenspectrum changes as we increase the relatedness between systems. We purposefully use the term "system" because it is general and no property discussed is specifically tied to particular scale or field of physical science. However, to aid intuition we will pose the initial cases in terms of evolutionary history and genetics.
+
+A system in this case represents a biological organism that can be described in terms of genetic traits. For simplicity we can simulate an organism's genome with a vector of $1$'s and $0$'s, where a $1$ represents the presence of a genetic trait and a $0$ represents the absence. For example organism $a$ can be represented as
+
+\begin{align*}
+a = \begin{bmatrix}1&1&1&0&0&0\end{bmatrix}
+\end{align*}
+
+where organism $a$ possesses the first three genetic traits and lacks the last 3.
+
+Likewise, an ensemble of systems or a population of organisms can be represented as a binary matrix where rows represent each organism and each column represents a particular genetic trait. for example
+
+\begin{align*}
+\begin{bmatrix}c\\b\\a\end{bmatrix} = \begin{bmatrix}1&1&1&0&0&0\\1&1&1&0&0&0\\1&1&1&0&0&0\end{bmatrix} = M_{similar}
+\end{align*}
+
+In this example organisms $a$, $b$, and $c$ are all clones of each other they share the presence of the first 3 genetic traits and the absence of the last 3 genetic traits. This is a case of the ensemble or population being identical or "similar" to each other. 
+
+At the other extreme we could find an ensemble like this 
+
+\begin{align*}
+\begin{bmatrix}c\\b\\a\end{bmatrix} = \begin{bmatrix}0&0&0&1&1&1\\1&1&1&0&0&0\\1&1&1&0&0&0\end{bmatrix} =  M_{modular}
+\end{align*}
+
+Here the full ensemble is split into two sub-populations with no shared genetic traits between $c$ and $\{a, b\}$. This is a 'modular' case in the sense that these two sub-populations are completely disconnected in terms of shared information. The descriptors of one sub-population are completely orthogonal to the other; the two populations tell us nothing about each other.
+
+The most common case for biological population is somewhere between these two extremes. We may find some organisms that are quite similar, along with other organisms that are more distantly related but still share some genetic traits
+
+\begin{align*}
+\begin{bmatrix}c\\b\\a\end{bmatrix} = \begin{bmatrix}0&0&0&1&1&1\\1&1&0&0&0&1\\1&1&0&0&0&1\end{bmatrix} =  M_{related}
+\end{align*}
+
+Our questions are how does the eigenspectrum change as we adjust the degree of relatedness between systems in the ensemble, and where does the information about that relatedness fall in the eigenspectrum. 
+
+To calculate the eigenspectrum of each ensemble we first calculate the matrix $MM^t$. The matrix $MM^t$ is a square similarity matrix between each pair of organisms, or more generally between each pair of rows of $M$. This is the standard first step toward calculating the SVD and recall from section §4.1.5 it is how we can calculate the eigenspectrum of rectangular matrices.
+
+We calculate the similarity matrices for each of the degrees of relatedness.
+
+\begin{align*}
+M_{similar} &= \begin{bmatrix}3&3&3\\3&3&3\\3&3&3\\\end{bmatrix} \\
+M_{related} &= \begin{bmatrix}3&1&1\\1&3&3\\1&3&3\\\end{bmatrix} \\
+M_{modular} &= \begin{bmatrix}3&0&0\\0&3&3\\0&3&3\\\end{bmatrix} \\
+\end{align*}
+
+Here, each number in the matrix represents the number of shared genetic traits between each pair of organisms. And, note how the only numbers that change are between $c$ (top) and $\{a, b\}$ (bottom, middle respectively). Because of this isolation, we can easily parameterize this changing degree of relatedness as the variable gamma $\gamma$, which we can smoothly vary to understand the changes in the eigenspectrum. 
+
+Specifically, we are first interested in the changes to this equation with respect to $\gamma$
+
+\begin{align*}
+\det\left(\begin{bmatrix}
+    \langle c|c \rangle-\lambda&\gamma&\gamma\\
+    \gamma&\langle b|b \rangle-\lambda&s\\
+    \gamma&s&\langle a|a \rangle-\lambda\\
+    \end{bmatrix}\right) = 0
+\end{align*}
+
+where,  $\langle c|c \rangle$ is the self similarity of organism $c$ with itself. In our cases $c$ shares $3$ genetic traits with itself so  $\langle c|c \rangle = 3$. Likewise, $\langle a|a\rangle = \langle b|b\rangle = s = 3$. We are using these variables help track which pairs of organisms contribute to the terms in the determinant and coefficients of the characteristic polynomial.
+
+### How do the eigenvalues change in response to a changing degree of relatedness?
+
+We sought to understand how the magnitudes of the eigenvalues are dependent on the degree of relatedness between sub-populations of systems. 
+
+To start, we inserted our example's variables into the first layer of the expanded determinant.
+
+\begin{align*}
+(\langle c|c \rangle-\lambda)\left|\begin{array}{cc}(\langle b|b \rangle- \lambda)&s\\ s&(\langle a|a \rangle-\lambda)\end{array}\right| -
+    \gamma\left|\begin{array}{cc}\gamma&s\\\gamma&(\langle a|a \rangle-\lambda)\end{array}\right| +
+    \gamma\left|\begin{array}{cc}\gamma&(\langle b|b \rangle-\lambda)\\\gamma&s\end{array}\right|
+\end{align*}
+
+Note how if $\gamma=0$, all the terms that compare the similarity of $c$ to $\{a, b\}$ are zeroed out, and the only remaining first term corresponds specifically to the similarity of $c$ onto itself and separately the determinant of $a$ and $b$. Also note, how the $\gamma$ variable is only in terms with a single $\lambda$. What this means is that the only term in the resulting characteristic polynomial dependent on $\gamma$ is the first order term of $\lambda$. 
+
+Expanded and simplified we find that the characteristic polynomial including $\gamma$ is 
+
+\begin{align*}
+\lambda^3 - 9\lambda^2 + (18 - 2\gamma^2)\lambda
+\end{align*}
+
+which is indeed only dependent on $\gamma$ in the first order term of $\lambda$.
+
+Substituting in and varying values of $\gamma$, i.e., varying the degree of relatedness gives us different instances of the characteristic polynomial.
+
+* Modular ($\gamma = 0$): $\lambda^3 - 9\lambda^2 + 18\lambda$ 
+* Related ($\gamma = 1$): $\lambda^3 - 9\lambda^2 + 16\lambda$ 
+* Related ($\gamma = 2$): $\lambda^3 - 9\lambda^2 + 10\lambda$
+* Similar ($\gamma = 3$): $\lambda^3 - 9\lambda^2$ 
+
+We note a trend in the first order term of $\lambda$; as the sub-populations become more related the first order coefficient in the polynomial gets closer and closer to zero. Once the sub-populations are identical the first order coefficient equals zero. 
+
+How does this changing coefficient change the roots ('eigenvalues') of the polynomial?
+
+Plotting the determinant polynomial with respect to $\lambda$ and more specifically the roots of the polynomials with respect to $\gamma$ shows a pattern. If $c$ is completely dissimilar to $a$ and $b$, the first order coefficient, $c_{n-2}$, is greater than zero and there are two necessarily non-zero eigenvalues: $λ_1$ and $λ_2$. Because $a$ and $b$ are completely similar in our example, λ_3 is always necessarily zero. 
+
+As the similarity of $c$ to $a$ and $b$ increases and $c_{n-2}$ goes to zero,  there are constraints on how the set of eigenvalues change. Computing the eigenvalues as a function of similarity of $c$ to $a$ and $b$ show that the two eigenvalues change in opposite directions: $λ_1$ becomes more positive while $λ_2$ becomes more negative. This relationship between $λ_1$ and $λ_2$ is a natural mathematical consequence of solving for the roots of a polynomial with maximum degree three and minimum degree 1. 
+
+```{julia}
+#| echo: false
+#| fig-cap: |-
+#|   (left) Characteristic polynomial at
+#|   3 different degrees of relatedness between organisms.
+#|   (right) Roots of the characteristic polynomial while smoothly varying $γ$
+#| label: fig-detbylambdaandgamma
+using Symbolics
+@variables λ γ
+γsq = γ^2
+p = (3 - λ)^3 - 9*(3 - λ) - γsq * (3 - λ) - γsq * (3 - λ) + 3* γsq + 3*γsq
+f = eval(build_function(expand(-p), λ, γ))
+cols = permutedims(palette(:viridis, 4).colors.colors)
+plot(grid=false, 
+    tickdirection=:out, label="", 
+    ylims=(-Inf, 100), widen=true,
+    ylabel=L"\det(C-λI)",
+    xlabel=L"λ",
+    xticks=0:3:9,
+)
+hline!([0], c=:black, linestyle=:dash, label="")
+plot!(x->f(x, 0), -.001, 10, c=cols[1], label="modular " * L"γ=0")
+plot!(x->f(x, 1), -.001, 10, c=cols[2], label="related " * L"γ=1")
+plot!(x->f(x, 2), -.001, 10, c=cols[3], label="related " * L"γ=2")
+p1 = plot!(x->f(x, 3), -.001, 10, c=cols[4], label="similar " * L"γ=3")
+
+
+function get_vals(g)
+    m = [
+        3 g g
+        g 3 3
+        g 3 3
+    ]
+    lambdas = eigvals(m)
+    sort(lambdas, rev=true)'
+end
+plot(grid=false, 
+    tickdirection=:out, label="", 
+    # ylims=(-Inf, 100), widen=true,
+    ylabel=L"\det(C-λI) = 0",
+    xlabel=L"\gamma",
+    yticks=0:3:9,
+)
+xs = 0:.01:3
+p2 = plot!(xs, vcat(get_vals.(xs)...)[:,1:2], 
+    linestyle=[:solid :dashdot],
+    labels=[L"λ_1" L"λ_2"],
+    lw=2,
+)
+
+plot(p1, p2, size=(800, 400), margin=3Plots.Measures.mm, output=:png, dpi=300)
+```
+
+We see that if we start with the characteristic polynomial including the degree of relatedness variable $\gamma$.
+
+\begin{align*}
+\lambda^3 - 9\lambda^2 + (18 - 2\gamma^2)\lambda
+\end{align*}
+
+We can immediately factor out a root and power of $\lambda$.
+
+\begin{align*}
+(\lambda - 0)(\lambda^2 - 9\lambda^1 + (18 - 2\gamma^2))
+\end{align*}
+ 
+
+This is the third root of the eigenvalue problem and it is always equal to zero because we have set this example with $a$ and $b$ as identical. 
+
+Factoring out this root allows us to use the quadratic formula for the roots on the remaining 2nd order polynomial:
+
+\begin{align*}
+\frac{-b \pm \sqrt{b^2 - 4ac}}{2a} \rightarrow \frac{9 \pm \sqrt{81 - 4(18 - 2\gamma^2)}}{2} = \frac{9 \pm \sqrt{8\gamma^2 + 9}}{2}
+\end{align*}
+
+Here we see that the remaining two roots are generically expressed using quadratic formula
+
+\begin{align*}
+(\lambda - 0)\left(\lambda - \frac{9 - \sqrt{8\gamma^2 + 9}}{2}\right)\left(\lambda - \frac{9 + \sqrt{8\gamma^2 + 9}}{2}\right)
+\end{align*}
+
+Because $\sqrt{8\gamma^2 + 9}$ will always be smaller than $9$ while $\gamma < (\langle a|a\rangle = 3)$, we can see that as $\gamma$ approaches $3$ the roots approach $\{0, 0, +9\}$ respectively. And likewise, as $\gamma$ approaches $0$ the roots approach $\{0, +3, +6\}$. These results make some intuitive sense when looking at Supp. Fig. 3 which plots the determinant value with respect to $\lambda$. When $\gamma$ is large it drives the positive first order term of the polynomial to zero, which means that the negative second order term dominates for the region between $\lambda = 0$ to approximately $\lambda = 6$ until finally the positive third order term overtakes and dominates. In contrast when $\gamma$ is small, the positive first order is present and can dominate the polynomial for small values of $\lambda$ until the higher order terms begin to dominate the polynomial.
+
+We also note two important facts: 
+
+First, the second eigenvalue 
+
+\begin{align*}
+\left(\lambda - \frac{9 - \sqrt{8\gamma^2 + 9}}{2}\right)
+\end{align*}
+
+will only equal zero when $\gamma$ is exactly equal to $3=\langle a|a \rangle =\langle b|b \rangle = s$ – only when $c$ is exactly identical to $a$ and $b$. At any point where there is a difference in similarity and relatedness between these subpopulations there will be exactly $2$ eigenvalues, and thus exactly $2$ spectral components. 
+
+Second, the two eigenvalues ('roots') will change in equal and opposite directions as the degree of related $\gamma$ changes. These dynamics are caused because the only occasion of $\gamma$ in the quadratic formula is behind the $\pm$ sign, we can see that as $\gamma$ changes the roots of the characteristic polynomial have to change by the same amount in both the positive and negative directions. We also note that the second eigenvalue very quickly drops off, following a power-law on the order of $\gamma^2$. 
+
+The results in this section support the idea that small eigenvalues—and by extension the spectral components they correspond to—are not noise. Up until sub-populations are exactly equal there are necessarily small spectral components, and because they roots change by at least the order of $\gamma^2$ even not vary related sub-populations can have very spectral components corresponding to eigenvalues with extremely small magnitude.
+
+### Change of eigenvector contributions in a 3x3 ensemble of systems as a function of similarity
+
+To better understand the relevance of the information being described by these minor spectral components, we computed the contribution of organisms $a$, $b$, and $c$ to eigenvectors $v_1$ and $v_2$, defined by $λ_1$ and $λ_2$ respectively. 
+
+For eigenvector $v_1$, we found that the contribution of $a$ and $b$ is relatively constant while the contribution of $c$ rapidly changes from zero and asymptotically reaches the same constant as $a$ and $b$. In contrast, for eigenvector $v_2$ we found that the contribution of $c$ is relatively constant while the contribution of $a$ and $b$ rapidly changes from zero to asymptotically reach a constant value away from that of $h$.  These results indicate that the eigenvector $v_1$ defines the similarity between $a$, $b$, and $c$, whereas eigenvector $v_2$ defines the difference between $a$, $b$, and $c$. This relationship underlies using the eigenspectrum to define different scales of relatedness and is necessarily true independent of the percent variance harbored by each spectral component.
+
+Yet, how is it that varying the similarity of $c$ to $a$ and $b$ has different effects on the how each system relates to each other depending on which eigenvector is being considered?
+
+```{julia}
+#| echo: false
+#| fig-cap: |-
+#|   Contribution of organisms onto eigenvectors $v_1$ and $v_2$ as the
+#|   degree of relatedness $\gamma$ is varied.
+#| label: fig-contributions
+
+function get_vecs(g)
+    m = [
+        3 g g
+        g 3 3
+        g 3 3
+    ]
+    vecs = eigvecs(m)
+    v = vecs[:, [3,2]]
+    v[:, 1] = sign(v[1, 1]) >= 0 ? v[:, 1] : .-v[:, 1]
+    v[:, 2] = sign(v[1, 2]) >= 0 ? v[:, 2] : .-v[:, 2]
+    v
+end
+xs = 0:.01:2.99
+pltvecs = permutedims(stack(get_vecs.(xs)), [3,1,2])
+plot([0 0 0 0], 
+    c=[1 1 2 2], 
+    linestyle=[:solid :dash :solid :dash], 
+    label=[L"v_1 x_c" L"v_1 \{x_a, x_b\}" L"v_2 x_c" L"v_2 \{x_a, x_b\}"],
+    xlabel=L"\gamma",
+    ylabel=L"x_a, x_b, x_c",
+    # title="Contribution of organisms on eigenvectors",
+    legend=:right,
+    xticks=([0, 100, 200, 300], [latexstring("$i") for i in 0:3]),
+    yticks=([0, 1/sqrt(3), 1/sqrt(2), 1], [L"0", L"\frac{1}{\sqrt{3}}", L"\frac{1}{\sqrt{2}}", L"1"]),
+    # yticks=[-.1, 0, 1/sqrt(3), 1/sqrt(2), .9, 1],
+    lw=2,
+    grid=false,
+    tickdir=:out,
+)
+plot!(pltvecs[:,:,1], c=1, lw=2, linestyle=[:solid :dashdot :dashdot], label="")
+plot!(pltvecs[:,:,2], c=2, lw=2, linestyle=[:solid :dashdot :dashdot], label="")
+plot!(;output=:png, dpi=300)
+```
+
+We sought to understand why changing the similarity of $c$ to $a$ and $b$ differentially affects the contribution of each system to eigenvectors $v_1$ and $v_2$. Solving the eigenvectors for the set of eigenvalues defines a system of equations relating the contribution of each system to eigenvectors $v_1$ and $v_2$ and the similarity of $c$ to $a$ and $b$. The eigenvector equation $(C-\lambda I)\vec{v} = 0$ expanded into matrix notation is
+
+\begin{align*}
+\begin{bmatrix}
+    \langle c|c \rangle-\lambda&\gamma&\gamma\\
+    \gamma&\langle b|b \rangle-\lambda&s\\
+    \gamma&s&\langle a|a \rangle-\lambda\\
+\end{bmatrix}\begin{bmatrix}x_c\\x_b\\x_a\end{bmatrix}= \begin{bmatrix}0\\0\\0\end{bmatrix}
+\end{align*}
+
+We are interested in how the contributions $\{x_a, x_b, x_c\}$ of each organism change with respect to $\gamma$. This question necessitates calculating the partial derivative of the contribution of each system onto either eigenvector $v_1$ or $v_2$ with respect to the similarity of $c$ to $a$ and $b$. We choose to calculate the derivative for each organism's contribution starting at the modular example where the sub-populations are completely independent, $\gamma = 0$
+
+To calculate these derivatives it will be helpful to first calculate the contribution of each organism at the modular case and for comparison at the similar case so that we have concrete numbers that we can substitute into the different variables.
+
+#### Modular case: eigenvector $v_1$
+
+we can start with the modular case's set of equations.
+
+\begin{align*}
+\begin{bmatrix}
+    3-\lambda&0&0\\
+    0&3-\lambda&3\\
+    0&3&3-\lambda\
+\end{bmatrix}\begin{bmatrix}x_c\\x_b\\x_a\end{bmatrix}= \begin{bmatrix}0\\0\\0\end{bmatrix}
+\end{align*}
+
+And then substitute the first root in the modular case $\lambda = 6$
+
+\begin{align*}
+\begin{bmatrix}
+    -3&0&0\\
+    0&-3&3\\
+    0&3&-3\\
+\end{bmatrix}\begin{bmatrix}x_c\\x_b\\x_a\end{bmatrix}= \begin{bmatrix}0\\0\\0\end{bmatrix}
+\end{align*}
+
+to solve for $x_c$ we look to the top row's equation
+
+\begin{align*}
+-3x_c + 0x_b + 0x_a = 0
+\end{align*}
+
+which is solved by setting $x_c = 0$
+
+the equations for $x_b$ and $x_a$ work together to show that they can equal any real number so long as $x_a = x_b$ 
+
+\begin{align*}
+3x_a - 3x_b = x_a - x_b = 0
+\end{align*}
+
+so to make $[x_c,x_b,x_a]^t$ a unitary vector (i.e., with length equal to $1$), we set $x_a = x_b = \frac{1}{\sqrt{2}}$
+
+
+#### Modular case: eigenvector $v_2$
+We can use the same process to find the contribution of each organism onto the second eigenvector with $\lambda = 3$
+
+\begin{align*}
+\begin{bmatrix}
+    0&0&0\\
+    0&0&3\\
+    0&3&0\\
+\end{bmatrix}\begin{bmatrix}x_c\\x_b\\x_a\end{bmatrix}= \begin{bmatrix}0\\0\\0\end{bmatrix}
+\end{align*}
+
+to solve for $x_c$ we look to the top equation
+
+\begin{align*}
+0x_c + 0x_b + 0x_a = 0
+\end{align*}
+
+and see that $x_c$ can be any value. 
+
+the equations for $x_b$ and $x_a$ work together to show that they must both equal zero. 
+
+\begin{align*}
+0x_c + 0x_b + 3x_a = x_a = 0
+\end{align*}
+
+
+\begin{align*}
+0x_c + 3x_b + 0x_a = x_b = 0
+\end{align*}
+
+so to make $[x_c,x_b,x_a]^t$ a unitary vector (i.e., with length equal to $1$), we set $x_a = x_b = 0$ and $x_c = 1$
+
+#### Similar case: eigenvector $v_1$
+We also can look to our similar case and find that all contributions are uniformly distributed along the first eigenvector, with no other non-zero eigenvalues or eigenvectors.
+
+\begin{align*}
+\begin{bmatrix}
+    -6&3&3\\
+    3&-6&3\\
+    3&3&-6\\
+\end{bmatrix}\begin{bmatrix}x_c\\x_b\\x_a\end{bmatrix}= \begin{bmatrix}0\\0\\0\end{bmatrix}
+\end{align*}
+
+these are permutations of the same equation
+
+\begin{align*}
+x_a + x_b - 2x_c = 0
+\end{align*}
+
+\begin{align*}
+x_a + x_c - 2x_b = 0
+\end{align*}
+
+\begin{align*}
+x_c + x_b - 2x_a = 0
+\end{align*}
+
+and is solved with $x_c = x_b = x_a$
+
+So, to make $[x_c,x_b,x_a]^t$ a unitary vector, we set $x_a = x_b = x_c = \frac{1}{\sqrt{3}}$
+
+#### Gathering the calculations
+After these calculations, we have this table of results showing the contribution of each organism onto eigenvectors both in the modular case and in the similar case
+
+organism contribution | modular <br> $v_1$, $\lambda=6$ | modular <br> $v_2$, $\lambda=3$ | similar <br> $v_1$, $\lambda=9$  | similar <br> $v_2$, $\lambda=0$
+---|---|---|---|---
+$x_c$ | $0$ | $1$ | $\frac{1}{\sqrt{3}}$ | $0$
+$x_b$ | $\frac{1}{\sqrt{2}}$ | $0$ | $\frac{1}{\sqrt{3}}$ | $0$
+$x_a$ | $\frac{1}{\sqrt{2}}$ | $0$ | $\frac{1}{\sqrt{3}}$ | $0$
+
+These are the two extreme cases where the sub-populations are either completely distinct or completely identical. And what we see is that in the distinct case the contributions of each sub-population are partitioned onto separate eigenvalues, such that the larger sub-population $\{a, b\}$ is on the larger eigenvector with no contribution from the smaller sub-population $c$. Conversely, the smaller sub-population's contribution is completely on the smaller eigenvector $v_2$ with no contribution from the larger sub-population. Thus, once we have increased the degree of relatedness $\gamma$ to the point both sub-populations are identical, the contribution of each organisms is uniformly weighted on the first eigenvector.
+
+We can now get a sense of what the contributions mean and how different behavior arises on each eigenvector by exploring how the contributions change as we move away from the modular case by increasing the degree of relatedness $\gamma$. Answering this question entails calculating the partial derivatives of $\{x_a, x_b, x_c\}$ with respect to $\gamma$. We will perform this calculation across both eigenvectors $v_1$ and $v_2$.
+ 
+
+#### partial derivative: $\frac{\partial x_c}{\partial \gamma}$
+Let's start with $x_c$
+
+On both $v_1$ and $v_2$ we will need to solve this equation.
+
+\begin{align*}
+(\langle c|c \rangle-\lambda)x_c + \gamma x_b + \gamma x_a = 0
+\end{align*}
+
+we can isolate $x_c$
+
+\begin{align*}
+(\langle c|c \rangle-\lambda)x_c + \gamma x_b + \gamma x_a &= 0 \\
+(\langle c|c \rangle-\lambda)x_c &= -(\gamma x_b + \gamma x_a)\\
+x_c &= \frac{-\gamma(x_b + x_a)}{(\langle c|c \rangle-\lambda)}\\
+x_c &= \frac{\gamma(x_b + x_a)}{\lambda - \langle c|c \rangle}\\
+\end{align*}
+
+Because we are starting from the modular case:
+
+* on $v_1$ we know that $x_a = x_b = \frac{1}{\sqrt{2}}$
+* on $v_2$ we know that $x_a = x_b = 0$
+
+We then get a different partial derivative for each eigenvector; simply from the fact the $x_a$ and $x_b$ zero out the derivative on eigenvector $v_2$ and are non-zero on $v_1$. 
+
+On $v_1$ we can substitute and simplify
+
+\begin{align*}
+\begin{align*}
+x_c = \frac{\gamma(x_b + x_a)}{\lambda - \langle c|c \rangle} &= \frac{\gamma(\frac{1}{\sqrt{2}} + \frac{1}{\sqrt{2}})}{\lambda - \langle c|c \rangle} \\
+&= \frac{2\gamma}{\sqrt{2}\left(\lambda - \langle c|c \rangle\right)} \\
+x_c &= \frac{\sqrt{2}\gamma}{\lambda - \langle c|c \rangle} \\
+\end{align*}
+\end{align*}
+
+On $v_2$ we can substitute and simplify
+
+\begin{align*}
+x_c = \frac{\gamma(x_b + x_a)}{\lambda - \langle c|c \rangle} &= \frac{\gamma(0 + 0)}{\lambda - \langle c|c \rangle} \\
+x_c &= 0
+\end{align*}
+
+#### partial derivative: $\frac{\partial x_b}{\partial \gamma}$, $\frac{\partial x_a}{\partial \gamma}$
+In contrast, when we we start with $x_b$'s equation
+
+\begin{align*}
+\gamma x_c + (\langle b|b \rangle-\lambda)x_b + s x_a = 0
+\end{align*}
+
+And isolate $x_b$
+
+\begin{align*}
+\gamma x_c + (\langle c|c \rangle-\lambda)x_b + s x_a &= 0\\
+x_b &= \frac{-(\gamma x_c + s x_a)}{(\langle b|b \rangle-\lambda)}\\
+x_b &= \frac{(\gamma x_c + s x_a)}{\lambda - \langle b|b \rangle}\\
+\end{align*}
+
+
+We see that on eigenvector $v_1$, $x_c=0$ so the partial derivative is zeroed out. And on eigenvector $v_2$, because $x_c=1$ the derivative with respect to $\gamma$ is 
+
+\begin{align*}
+\frac{\partial x_b}{\partial \gamma} = \frac{1}{\lambda - \langle b|b \rangle}
+\end{align*}
+
+Using the exact same procedure as for $x_b$, we find for $x_a$ that its partial derivatives are essentially identical
+
+Pulling together all these partial derivatives we start to see a pattern, and explanation for how contributions of organisms can rise and fall on different eigenvectors
+
+eigenvector | partial derivative $x_c$ | partial derivative $x_b$ | partial derivative $x_a$
+---|---|---|---
+$\text{eigenvector } v_1$ | $\frac{\partial x_c}{\partial \gamma} = \frac{\sqrt{2}}{\lambda_1 - \langle c|c \rangle}$ | $\frac{\partial x_b}{\partial \gamma} = 0$ | $\frac{\partial x_a}{\partial \gamma} = 0$
+$\text{eigenvector } v_2$ |$\frac{\partial x_c}{\partial \gamma} = 0$ |$\frac{\partial x_b}{\partial \gamma} = \frac{1}{\lambda_2 - \langle b|b \rangle}$|$\frac{\partial x_a}{\partial \gamma} = \frac{1}{\lambda_2 - \langle a|a \rangle}$
+
+We find that in the limit of a small increase in similarity of $c$ to $a$ and $b$, the change in the contribution of $c$ to eigenvector $v_1$ is a constant while the that of $a$ and $b$ is zero. In contrast, the change in the contribution of $c$ to eigenvector $v_2$ is zero while that of $a$ and $b$ is a constant. Because $λ_1$ and $λ_2$ trend in opposite directions (and away from the singularity at $\lambda=3$), the contribution of $c$ to eigenvector $v_1$ smoothly tends towards that of $a$ and $b$ thereby defining relative system similarity, while the contributions of $a$ and $b$ to eigenvector $v_2$ smoothly tend away from that of $c$ thereby defining the relative dissimilarity between systems.
+

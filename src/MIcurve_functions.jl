@@ -22,6 +22,17 @@ function pairedMIagainstmetacolumn(metacolumns, IDS, clusterids, clustersmps; bo
     DataFrame(tstat_MI, names(metacolumns)) |> stack |> df->rename!(df,["taxaID","MI"]);
 end
 
+function pairedMIagainstnumericcolumn(metacolumns, IDS, clusterids, clustersmps; bootstrap=false, mask=nothing)
+    tstat_MI = zeros(length(clusterids), size(metacolumns, 2))
+    for (i, mcol) in enumerate(eachcol(metacolumns))
+        # cat = levelorder(categorical(mcol))
+        # pcat = cat .== cat'
+        pcat = abs.(mcol .- permutedims(mcol))
+        tstat_MI[:, i] .= collectMI_across_treedepth(clusterids, clustersmps, IDS, pcat; bootstrap, mask)
+    end
+    DataFrame(tstat_MI, names(metacolumns)) |> stack |> df->rename!(df,["taxaID","MI"]);
+end
+
 function collectMI_across_treedepth(clusterids, clustersmps, IDS, ptax; bootstrap=false, mask=nothing)
     uppertriangle = triu(trues(size(ptax)), 1);
     uppertriangle = isnothing(mask) ? uppertriangle : uppertriangle[mask, mask]

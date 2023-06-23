@@ -3,8 +3,8 @@
 This code base is using the Julia Language and [DrWatson](https://juliadynamics.github.io/DrWatson.jl/stable/)
 to make a reproducible scientific project for the paper
 
-> Inferring phylogenetic structure from the statistical geometry of covariation,
-> Benjamin A. Doran, Robert Y. Chen,..., Nick Dylla, Eric Pamer, Arjun S. Raman*
+> Personalized signatures of human gut bacteria discovered from proteome coevolution
+> Doran et al.
 >, ((paper year)) 
 
 To (locally) reproduce this project, do the following:
