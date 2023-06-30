@@ -1,5 +1,7 @@
 # Doran_etal_2022
 
+*current state: prerelease, This will be curated into a more interpretable and user friendly version soon.*
+
 This code base is using the Julia Language and [DrWatson](https://juliadynamics.github.io/DrWatson.jl/stable/)
 to make a reproducible scientific project for the paper
 
