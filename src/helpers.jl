@@ -1,4 +1,5 @@
 using SparseArrays
+using FASTX
 
 function lastline(io)
     local line
@@ -59,9 +60,8 @@ function onehotencode(chardf::AbstractMatrix{<:Char})
     end
     return sparse(hcat(ohemtx...))
 end
-
 function _stringcolumntocharmtx(seqs)
-    Matrix(DataFrame(reduce(hcat, collect.(seqs)) |> permutedims, [string(i) for i in 1:length(first(seqs))]))
+    reduce(vcat, permutedims.(collect.(seqs)))
 end
 
 function writefasta(path, ids, seqs)
@@ -75,30 +75,28 @@ end
 function readfasta(path) 
     FASTA.Reader(open(path)) do io
         recs = collect(io)
-        DataFrame(
-            :label => String.(identifier.(recs)), 
-            :sample_id => String.(description.(recs)), 
-            :sequence => String.(sequence.(recs)),
+        (;
+            label=String.(identifier.(recs)), 
+            sample_id=String.(description.(recs)), 
+            sequence=String.(sequence.(recs)),
         )
     end
 end
 
-# function writephylip(filename, M, ids)
-#     format_id(s) = rpad(s, 10)[1:10]
-#     n = size(M, 1)
-#     open(filename, "w") do io
-#         println(io, string(n))
-#         for i in axes(M, 1)
-#             print(io, format_id(ids[i]), "    ")
-#             for j in 1:i
-#                 print(io, string(round(M[i, j], digits=5)), "  ")
-#             end
-#             println(io)
-#         end
-#     end
-# end
+function writephylip(filename, M::AbstractVector{<:AbstractString}, ids)
+    format_id(s) = rpad(s, 10)[1:10]
+    n = length(M)
+    m = length(first(M))
+    open(filename, "w") do io
+        println(io, string(n), " ", string(m))
+        for (id, seq) in zip(ids, M)
+            print(io, format_id(id), "    ")
+            println(io, seq)
+        end
+    end
+end
 
-function writephylip(filename, M, ids)
+function writephylip(filename, M::AbstractMatrix{<:Number}, ids)
     format_id(s) = rpad(s, 10)[1:10]
     n = size(M, 1)
     open(filename, "w") do io
